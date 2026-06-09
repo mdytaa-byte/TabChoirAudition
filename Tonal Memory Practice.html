@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tonal Memory Practice</title>
+
+<style>
+body{
+    font-family:Arial,Helvetica,sans-serif;
+    max-width:800px;
+    margin:40px auto;
+    padding:20px;
+    text-align:center;
+    background:#f5f7fa;
+}
+
+h1{
+    color:#2c3e50;
+}
+
+button{
+    padding:12px 20px;
+    margin:8px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.note-btn{
+    width:120px;
+}
+
+#feedback{
+    font-size:1.3em;
+    font-weight:bold;
+    min-height:40px;
+    margin-top:20px;
+}
+
+#score{
+    margin:20px 0;
+    font-size:1.2em;
+}
+
+.controls{
+    margin-bottom:20px;
+}
+</style>
+</head>
+<body>
+
+<h1>Tonal Memory Practice</h1>
+
+<p>
+Listen to the solid chord and then the arpeggiated chord.
+Determine which note in the arpeggio has been changed.
+</p>
+
+<div class="controls">
+<label>
+Difficulty:
+<select id="difficulty">
+    <option value="easy">Easy</option>
+    <option value="medium" selected>Medium</option>
+    <option value="hard">Hard</option>
+</select>
+</label>
+</div>
+
+<button id="playBtn">Play Exercise</button>
+
+<div>
+    <button class="note-btn" data-note="1">1st Note</button>
+    <button class="note-btn" data-note="2">2nd Note</button>
+    <button class="note-btn" data-note="3">3rd Note</button>
+    <button class="note-btn" data-note="4">4th Note</button>
+</div>
+
+<div id="feedback"></div>
+
+<div id="score">
+Correct: <span id="correct">0</span> |
+Total: <span id="total">0</span>
+</div>
+
+<script>
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+let correctAnswer = null;
+let total = 0;
+let correct = 0;
+
+function midiToFreq(midi){
+    return 440 * Math.pow(2,(midi-69)/12);
+}
+
+function playTone(freq,start,duration){
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = "triangle";
+    osc.frequency.value = freq;
+
+    gain.gain.setValueAtTime(0.0001,start);
+    gain.gain.exponentialRampToValueAtTime(0.25,start+0.02);
+    gain.gain.setValueAtTime(0.25,start+duration-0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001,start+duration);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(start);
+    osc.stop(start+duration);
+}
+
+function randomChoice(arr){
+    return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function buildChord(){
+    const difficulty =
+        document.getElementById("difficulty").value;
+
+    const roots = [48,50,52,53,55,57,59,60];
+
+    const root = randomChoice(roots);
+
+    let chordTypes;
+
+    if(difficulty==="easy"){
+        chordTypes = [
+            [0,4,7,12],   // major
+            [0,3,7,12]    // minor
+        ];
+    }
+    else if(difficulty==="medium"){
+        chordTypes = [
+            [0,4,7,12],
+            [0,3,7,12],
+            [0,4,7,11],   // maj7
+            [0,3,7,10]    // min7
+        ];
+    }
+    else{
+        chordTypes = [
+            [0,4,7,12],
+            [0,3,7,12],
+            [0,4,7,11],
+            [0,3,7,10],
+            [0,4,8,12],   // augmented
+            [0,3,6,12]    // diminished
+        ];
+    }
+
+    const intervals = randomChoice(chordTypes);
+
+    return intervals.map(i => root + i);
+}
+
+async function playExercise(){
+
+    await audioCtx.resume();
+
+    document.getElementById("feedback").textContent = "";
+
+    const chord = buildChord();
+
+    correctAnswer = Math.floor(Math.random()*4) + 1;
+
+    const arpeggio = [...chord];
+
+    const direction = Math.random() < 0.5 ? -1 : 1;
+    arpeggio[correctAnswer-1] += direction;
+
+    const now = audioCtx.currentTime + 0.2;
+
+    // Solid chord
+    chord.forEach(note=>{
+        playTone(
+            midiToFreq(note),
+            now,
+            1.4
+        );
+    });
+
+    // Arpeggio after pause
+    const arpStart = now + 2.2;
+
+    arpeggio.forEach((note,index)=>{
+        playTone(
+            midiToFreq(note),
+            arpStart + index*0.7,
+            0.6
+        );
+    });
+}
+
+function submitAnswer(choice){
+
+    if(correctAnswer===null){
+        document.getElementById("feedback").textContent =
+            "Play an exercise first.";
+        return;
+    }
+
+    total++;
+
+    if(choice===correctAnswer){
+        correct++;
+        document.getElementById("feedback").textContent =
+            "✓ Correct!";
+        document.getElementById("feedback").style.color =
+            "green";
+    }else{
+        document.getElementById("feedback").textContent =
+            `✗ Incorrect. The ${ordinal(correctAnswer)} note was changed.`;
+        document.getElementById("feedback").style.color =
+            "crimson";
+    }
+
+    document.getElementById("correct").textContent = correct;
+    document.getElementById("total").textContent = total;
+
+    correctAnswer = null;
+}
+
+function ordinal(n){
+    return ["","1st","2nd","3rd","4th"][n];
+}
+
+document.getElementById("playBtn")
+.addEventListener("click",playExercise);
+
+document.querySelectorAll(".note-btn")
+.forEach(btn=>{
+    btn.addEventListener("click",()=>{
+        submitAnswer(
+            parseInt(btn.dataset.note)
+        );
+    });
+});
+</script>
+
+</body>
+</html>

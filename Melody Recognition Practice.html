@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Melody Recognition Practice</title>
+
+<style>
+body{
+    font-family:Arial,Helvetica,sans-serif;
+    max-width:900px;
+    margin:40px auto;
+    padding:20px;
+    text-align:center;
+    background:#f4f6f8;
+}
+
+h1{
+    color:#2c3e50;
+}
+
+button{
+    padding:12px 20px;
+    margin:8px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.choice{
+    width:140px;
+}
+
+#feedback{
+    min-height:40px;
+    font-size:1.3em;
+    font-weight:bold;
+    margin-top:20px;
+}
+
+#score{
+    margin-top:20px;
+    font-size:1.2em;
+}
+
+.controls{
+    margin-bottom:20px;
+}
+</style>
+</head>
+<body>
+
+<h1>Melody Recognition Practice</h1>
+
+<p>
+Listen to the melody by itself, then listen to a harmonized version.
+Determine whether the melody appears in the highest, middle, or lowest voice.
+</p>
+
+<div class="controls">
+<label>
+Difficulty:
+<select id="difficulty">
+    <option value="easy">Easy</option>
+    <option value="medium" selected>Medium</option>
+    <option value="hard">Hard</option>
+</select>
+</label>
+</div>
+
+<button id="playBtn">Play Exercise</button>
+
+<div>
+    <button class="choice" data-answer="highest">Highest Voice</button>
+    <button class="choice" data-answer="middle">Middle Voice</button>
+    <button class="choice" data-answer="lowest">Lowest Voice</button>
+</div>
+
+<div id="feedback"></div>
+
+<div id="score">
+Correct: <span id="correct">0</span> |
+Total: <span id="total">0</span>
+</div>
+
+<script>
+
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+let answer = null;
+let total = 0;
+let correct = 0;
+
+function midiToFreq(midi){
+    return 440 * Math.pow(2,(midi-69)/12);
+}
+
+function randomChoice(arr){
+    return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function playNote(freq,start,duration,volume=0.15){
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = "triangle";
+    osc.frequency.value = freq;
+
+    gain.gain.setValueAtTime(0.0001,start);
+    gain.gain.exponentialRampToValueAtTime(volume,start+0.02);
+    gain.gain.setValueAtTime(volume,start+duration-0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001,start+duration);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(start);
+    osc.stop(start+duration);
+}
+
+function buildMelody(){
+
+    const difficulty =
+        document.getElementById("difficulty").value;
+
+    const root = randomChoice([60,62,64,65,67]);
+
+    let length;
+    let maxLeap;
+
+    if(difficulty==="easy"){
+        length = 5;
+        maxLeap = 2;
+    }
+    else if(difficulty==="medium"){
+        length = 6;
+        maxLeap = 4;
+    }
+    else{
+        length = 8;
+        maxLeap = 7;
+    }
+
+    const melody = [root];
+
+    for(let i=1;i<length;i++){
+
+        let step =
+            Math.floor(Math.random()*(maxLeap*2+1))
+            - maxLeap;
+
+        if(step===0) step = 1;
+
+        let next = melody[i-1] + step;
+
+        next = Math.max(55,Math.min(79,next));
+
+        melody.push(next);
+    }
+
+    return melody;
+}
+
+function createHarmony(melody,position){
+
+    const highest = [];
+    const middle = [];
+    const lowest = [];
+
+    for(let note of melody){
+
+        if(position==="highest"){
+
+            highest.push(note);
+
+            middle.push(note-4-randomChoice([0,1,2]));
+            lowest.push(note-9-randomChoice([0,1,2]));
+        }
+
+        else if(position==="middle"){
+
+            highest.push(note+5+randomChoice([0,1,2]));
+            middle.push(note);
+            lowest.push(note-7-randomChoice([0,1,2]));
+        }
+
+        else{
+
+            highest.push(note+12+randomChoice([0,1,2]));
+            middle.push(note+5+randomChoice([0,1,2]));
+            lowest.push(note);
+        }
+    }
+
+    return {
+        highest,
+        middle,
+        lowest
+    };
+}
+
+async function playExercise(){
+
+    await audioCtx.resume();
+
+    document.getElementById("feedback").textContent = "";
+
+    const melody = buildMelody();
+
+    answer = randomChoice([
+        "highest",
+        "middle",
+        "lowest"
+    ]);
+
+    const harmony = createHarmony(
+        melody,
+        answer
+    );
+
+    const noteLength = 0.55;
+    const gap = 0.05;
+
+    const start = audioCtx.currentTime + 0.25;
+
+    // Melody alone
+
+    melody.forEach((note,index)=>{
+
+        playNote(
+            midiToFreq(note),
+            start + index*(noteLength+gap),
+            noteLength,
+            0.22
+        );
+    });
+
+    // Harmonized version
+
+    const secondStart =
+        start +
+        melody.length*(noteLength+gap)
+        + 1.2;
+
+    melody.forEach((_,index)=>{
+
+        const t =
+            secondStart +
+            index*(noteLength+gap);
+
+        playNote(
+            midiToFreq(harmony.highest[index]),
+            t,
+            noteLength,
+            0.14
+        );
+
+        playNote(
+            midiToFreq(harmony.middle[index]),
+            t,
+            noteLength,
+            0.14
+        );
+
+        playNote(
+            midiToFreq(harmony.lowest[index]),
+            t,
+            noteLength,
+            0.14
+        );
+    });
+}
+
+function checkAnswer(choice){
+
+    if(!answer){
+
+        document.getElementById("feedback").textContent =
+            "Play an exercise first.";
+        return;
+    }
+
+    total++;
+
+    if(choice===answer){
+
+        correct++;
+
+        document.getElementById("feedback").textContent =
+            "✓ Correct!";
+        document.getElementById("feedback").style.color =
+            "green";
+    }
+    else{
+
+        document.getElementById("feedback").textContent =
+            "✗ Incorrect. The melody was in the " +
+            answer + " voice.";
+
+        document.getElementById("feedback").style.color =
+            "crimson";
+    }
+
+    document.getElementById("correct").textContent =
+        correct;
+
+    document.getElementById("total").textContent =
+        total;
+
+    answer = null;
+}
+
+document.getElementById("playBtn")
+.addEventListener("click",playExercise);
+
+document.querySelectorAll(".choice")
+.forEach(button=>{
+
+    button.addEventListener("click",()=>{
+
+        checkAnswer(button.dataset.answer);
+    });
+});
+
+</script>
+
+</body>
+</html>

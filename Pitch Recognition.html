@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pitch Recognition Practice</title>
+
+<style>
+body{
+    font-family:Arial,sans-serif;
+    max-width:900px;
+    margin:30px auto;
+    text-align:center;
+    background:#f5f7fa;
+}
+
+h1{
+    color:#2c3e50;
+}
+
+canvas{
+    border:1px solid #ccc;
+    background:white;
+    margin:20px 0;
+}
+
+button{
+    padding:12px 18px;
+    margin:5px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+#feedback{
+    font-size:1.2em;
+    font-weight:bold;
+    min-height:35px;
+    margin-top:15px;
+}
+
+#score{
+    margin-top:15px;
+    font-size:1.1em;
+}
+</style>
+</head>
+<body>
+
+<h1>Pitch Recognition Practice</h1>
+
+<p>
+Listen to the key tone. A note will appear on the staff.
+Then three pitches will be played.
+Determine whether the displayed note is the 1st, 2nd, 3rd, or none of the pitches.
+</p>
+
+<canvas id="staff" width="600" height="180"></canvas>
+
+<div>
+<button id="playBtn">Play Exercise</button>
+</div>
+
+<div>
+<button class="answer" data-answer="1">1st Pitch</button>
+<button class="answer" data-answer="2">2nd Pitch</button>
+<button class="answer" data-answer="3">3rd Pitch</button>
+<button class="answer" data-answer="0">None</button>
+</div>
+
+<div id="feedback"></div>
+
+<div id="score">
+Correct: <span id="correct">0</span> |
+Total: <span id="total">0</span>
+</div>
+
+<script>
+
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+let correctAnswer = null;
+let total = 0;
+let correct = 0;
+
+const canvas = document.getElementById("staff");
+const ctx = canvas.getContext("2d");
+
+const staffNotes = [
+    62, // D4
+    64, // E4
+    65, // F4
+    67, // G4
+    69, // A4
+    71, // B4
+    72, // C5
+    74, // D5
+    76, // E5
+    77, // F5
+    79  // G5
+];
+
+function midiToFreq(midi){
+    return 440 * Math.pow(2,(midi - 69)/12);
+}
+
+function randomChoice(arr){
+    return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function playTone(freq,start,duration){
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = "triangle";
+    osc.frequency.value = freq;
+
+    gain.gain.setValueAtTime(0.0001,start);
+    gain.gain.exponentialRampToValueAtTime(0.22,start+0.02);
+    gain.gain.setValueAtTime(0.22,start+duration-0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001,start+duration);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(start);
+    osc.stop(start+duration);
+}
+
+function drawStaff(){
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    for(let i=0;i<5;i++){
+
+        const y = 50 + i*20;
+
+        ctx.beginPath();
+        ctx.moveTo(60,y);
+        ctx.lineTo(540,y);
+        ctx.stroke();
+    }
+
+    ctx.font = "50px serif";
+    ctx.fillText("𝄞",70,95);
+}
+
+function drawNote(midi){
+
+    drawStaff();
+
+    const notePositions = {
+        62:150,
+        64:140,
+        65:130,
+        67:120,
+        69:110,
+        71:100,
+        72:90,
+        74:80,
+        76:70,
+        77:60,
+        79:50
+    };
+
+    const y = notePositions[midi];
+
+    ctx.beginPath();
+    ctx.ellipse(300,y,12,8,-0.4,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(311,y);
+    ctx.lineTo(311,y-40);
+    ctx.stroke();
+
+    if(midi === 62){
+        ctx.beginPath();
+        ctx.moveTo(285,150);
+        ctx.lineTo(325,150);
+        ctx.stroke();
+    }
+
+    if(midi === 79){
+        ctx.beginPath();
+        ctx.moveTo(285,50);
+        ctx.lineTo(325,50);
+        ctx.stroke();
+    }
+}
+
+function generateExercise(){
+
+    const keyTone = randomChoice([
+        60,62,64,65,67
+    ]);
+
+    const displayedPitch =
+        randomChoice(staffNotes);
+
+    drawNote(displayedPitch);
+
+    const answerType =
+        Math.floor(Math.random()*4);
+
+    let heard = [];
+
+    if(answerType === 0){
+
+        correctAnswer = 0;
+
+        do{
+            heard = [
+                randomChoice(staffNotes),
+                randomChoice(staffNotes),
+                randomChoice(staffNotes)
+            ];
+        }
+        while(heard.includes(displayedPitch));
+    }
+    else{
+
+        correctAnswer = answerType;
+
+        heard = [
+            randomChoice(staffNotes),
+            randomChoice(staffNotes),
+            randomChoice(staffNotes)
+        ];
+
+        heard[answerType-1] =
+            displayedPitch;
+
+        for(let i=0;i<3;i++){
+
+            if(
+                i !== answerType-1 &&
+                heard[i] === displayedPitch
+            ){
+
+                heard[i] =
+                    randomChoice(
+                        staffNotes.filter(
+                            n => n !== displayedPitch
+                        )
+                    );
+            }
+        }
+    }
+
+    return {
+        keyTone,
+        heard
+    };
+}
+
+async function playExercise(){
+
+    await audioCtx.resume();
+
+    document.getElementById("feedback").textContent = "";
+
+    const ex = generateExercise();
+
+    const start =
+        audioCtx.currentTime + 0.25;
+
+    // Key tone
+
+    playTone(
+        midiToFreq(ex.keyTone),
+        start,
+        1.0
+    );
+
+    // Three candidate pitches
+
+    ex.heard.forEach((note,index)=>{
+
+        playTone(
+            midiToFreq(note),
+            start + 1.8 + index*1.0,
+            0.75
+        );
+    });
+}
+
+function checkAnswer(choice){
+
+    if(correctAnswer === null){
+
+        document.getElementById("feedback").textContent =
+            "Play an exercise first.";
+
+        return;
+    }
+
+    total++;
+
+    if(choice === correctAnswer){
+
+        correct++;
+
+        document.getElementById("feedback").textContent =
+            "✓ Correct!";
+
+        document.getElementById("feedback").style.color =
+            "green";
+    }
+    else{
+
+        let answerText;
+
+        if(correctAnswer === 0){
+            answerText = "None";
+        }
+        else{
+            answerText =
+                correctAnswer +
+                (correctAnswer === 1 ? "st" :
+                 correctAnswer === 2 ? "nd" :
+                 correctAnswer === 3 ? "rd" : "th");
+        }
+
+        document.getElementById("feedback").textContent =
+            "✗ Incorrect. Answer: " + answerText;
+
+        document.getElementById("feedback").style.color =
+            "crimson";
+    }
+
+    document.getElementById("correct").textContent =
+        correct;
+
+    document.getElementById("total").textContent =
+        total;
+
+    correctAnswer = null;
+}
+
+document.getElementById("playBtn")
+.addEventListener("click",playExercise);
+
+document.querySelectorAll(".answer")
+.forEach(btn=>{
+
+    btn.addEventListener("click",()=>{
+
+        checkAnswer(
+            parseInt(btn.dataset.answer)
+        );
+    });
+
+});
+
+drawStaff();
+
+</script>
+
+</body>
+</html>
