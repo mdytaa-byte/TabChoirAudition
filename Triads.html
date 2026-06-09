@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Triads Explorer</title>
+
+<style>
+
+body{
+    font-family:Arial,sans-serif;
+    max-width:1100px;
+    margin:20px auto;
+    padding:20px;
+    background:#f5f7fa;
+}
+
+.section{
+    background:white;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,.1);
+}
+
+h1,h2{
+    color:#2c3e50;
+}
+
+button{
+    padding:10px 16px;
+    margin:5px;
+    cursor:pointer;
+}
+
+canvas{
+    border:1px solid #ccc;
+    background:white;
+}
+
+#feedback{
+    min-height:30px;
+    font-weight:bold;
+}
+
+.correct{
+    color:green;
+}
+
+.incorrect{
+    color:crimson;
+}
+
+.keyboard{
+    display:flex;
+    margin-top:15px;
+    user-select:none;
+}
+
+.key{
+    width:40px;
+    height:120px;
+    border:1px solid black;
+    background:white;
+    display:flex;
+    justify-content:center;
+    align-items:flex-end;
+    font-size:12px;
+}
+
+.highlight{
+    background:#93c5fd;
+}
+
+.dragNote{
+    display:inline-block;
+    padding:10px;
+    background:#dbeafe;
+    border:1px solid #999;
+    border-radius:8px;
+    margin:5px;
+    cursor:grab;
+}
+
+.dropZone{
+    width:60px;
+    height:60px;
+    border:2px dashed #999;
+    display:inline-flex;
+    justify-content:center;
+    align-items:center;
+    margin:5px;
+    border-radius:8px;
+}
+
+</style>
+</head>
+<body>
+
+<h1>Triads Explorer</h1>
+
+<div class="section">
+
+<h2>What Is a Triad?</h2>
+
+<p>
+A triad is a three-note chord built from:
+</p>
+
+<ul>
+<li>Root</li>
+<li>Third</li>
+<li>Fifth</li>
+</ul>
+
+<p>
+Triads may be Major, Minor, Diminished, or Augmented.
+</p>
+
+</div>
+
+<div class="section">
+
+<h2>Visual Triads on a Staff</h2>
+
+<button onclick="showTriad('major')">
+Major
+</button>
+
+<button onclick="showTriad('minor')">
+Minor
+</button>
+
+<button onclick="showTriad('diminished')">
+Diminished
+</button>
+
+<button onclick="showTriad('augmented')">
+Augmented
+</button>
+
+<br><br>
+
+<canvas
+id="staff"
+width="700"
+height="250">
+</canvas>
+
+<p id="triadLabel"></p>
+
+</div>
+
+<div class="section">
+
+<h2>Keyboard View</h2>
+
+<p>
+The notes used in the triad are highlighted.
+</p>
+
+<div
+class="keyboard"
+id="keyboard">
+</div>
+
+</div>
+
+<div class="section">
+
+<h2>Build a Triad</h2>
+
+<p>
+Drag the notes to build a C Major triad.
+</p>
+
+<div>
+
+<span
+class="dragNote"
+draggable="true">
+C
+</span>
+
+<span
+class="dragNote"
+draggable="true">
+E
+</span>
+
+<span
+class="dragNote"
+draggable="true">
+G
+</span>
+
+<span
+class="dragNote"
+draggable="true">
+B
+</span>
+
+</div>
+
+<div>
+
+<div class="dropZone"></div>
+<div class="dropZone"></div>
+<div class="dropZone"></div>
+
+</div>
+
+<button onclick="checkBuilder()">
+Check Triad
+</button>
+
+<p id="builderFeedback"></p>
+
+</div>
+
+<div class="section">
+
+<h2>Hear the Triads</h2>
+
+<button onclick="playTriad('major')">
+Play Major
+</button>
+
+<button onclick="playTriad('minor')">
+Play Minor
+</button>
+
+<button onclick="playTriad('diminished')">
+Play Diminished
+</button>
+
+<button onclick="playTriad('augmented')">
+Play Augmented
+</button>
+
+</div>
+
+<div class="section">
+
+<h2>Assessment</h2>
+
+<button onclick="newQuestion()">
+New Question
+</button>
+
+<p id="question"></p>
+
+<div id="answers"></div>
+
+<div id="feedback"></div>
+
+<p>
+Score:
+<span id="correct">0</span>
+/
+<span id="total">0</span>
+</p>
+
+</div>
+
+<script>
+
+const AudioContext =
+window.AudioContext ||
+window.webkitAudioContext;
+
+const audioCtx =
+new AudioContext();
+
+const canvas =
+document.getElementById(
+    "staff"
+);
+
+const ctx =
+canvas.getContext("2d");
+
+let answer = "";
+
+let correct = 0;
+let total = 0;
+
+const notePositions = {
+
+    C4:180,
+    D4:170,
+    E4:160,
+    F4:150,
+    G4:140,
+    A4:130,
+    B4:120,
+
+    C5:110,
+    D5:100,
+    E5:90,
+    F5:80,
+    G5:70,
+    A5:60
+
+};
+
+function drawStaff(){
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    for(let i=0;i<5;i++){
+
+        let y =
+        80 + i*20;
+
+        ctx.beginPath();
+
+        ctx.moveTo(60,y);
+        ctx.lineTo(650,y);
+
+        ctx.stroke();
+    }
+
+    ctx.font =
+    "70px serif";
+
+    ctx.fillText(
+        "𝄞",
+        70,
+        145
+    );
+}
+
+function drawLedgerLine(x,y){
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x-15,
+        y
+    );
+
+    ctx.lineTo(
+        x+15,
+        y
+    );
+
+    ctx.stroke();
+}
+
+function drawNote(x,y){
+
+    ctx.beginPath();
+
+    ctx.ellipse(
+        x,
+        y,
+        10,
+        7,
+        -0.4,
+        0,
+        Math.PI*2
+    );
+
+    ctx.fill();
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x+10,
+        y
+    );
+
+    ctx.lineTo(
+        x+10,
+        y-45
+    );
+
+    ctx.stroke();
+
+    if(y>160){
+        drawLedgerLine(x,y);
+    }
+}
+
+function showTriad(type){
+
+    drawStaff();
+
+    let notes = [];
+
+    if(type==="major"){
+        notes =
+        ["C5","E5","G5"];
+    }
+
+    if(type==="minor"){
+        notes =
+        ["C5","D5","G5"];
+    }
+
+    if(type==="diminished"){
+        notes =
+        ["C5","D5","F5"];
+    }
+
+    if(type==="augmented"){
+        notes =
+        ["C5","E5","A5"];
+    }
+
+    notes.forEach(note=>{
+
+        drawNote(
+            350,
+            notePositions[note]
+        );
+
+    });
+
+    triadLabel.textContent =
+    type.toUpperCase() +
+    " TRIAD";
+
+    highlightKeys(notes);
+}
+
+function createKeyboard(){
+
+    const names = [
+        "C","D","E",
+        "F","G","A","B"
+    ];
+
+    names.forEach(name=>{
+
+        const key =
+        document.createElement(
+            "div"
+        );
+
+        key.className =
+        "key";
+
+        key.id =
+        "key"+name;
+
+        key.textContent =
+        name;
+
+        keyboard.appendChild(
+            key
+        );
+
+    });
+}
+
+function highlightKeys(notes){
+
+    document
+    .querySelectorAll(
+        ".key"
+    )
+    .forEach(k=>
+        k.classList.remove(
+            "highlight"
+        )
+    );
+
+    notes.forEach(note=>{
+
+        const letter =
+        note[0];
+
+        document
+        .getElementById(
+            "key"+letter
+        )
+        .classList.add(
+            "highlight"
+        );
+
+    });
+}
+
+function playTone(freq,start){
+
+    const osc =
+    audioCtx.createOscillator();
+
+    const gain =
+    audioCtx.createGain();
+
+    osc.frequency.value =
+    freq;
+
+    gain.gain.value =
+    .2;
+
+    osc.connect(gain);
+
+    gain.connect(
+        audioCtx.destination
+    );
+
+    osc.start(start);
+
+    osc.stop(
+        start+1
+    );
+}
+
+async function playTriad(type){
+
+    await audioCtx.resume();
+
+    let freqs;
+
+    if(type==="major")
+        freqs=[
+            261.63,
+            329.63,
+            392
+        ];
+
+    if(type==="minor")
+        freqs=[
+            261.63,
+            311.13,
+            392
+        ];
+
+    if(type==="diminished")
+        freqs=[
+            261.63,
+            311.13,
+            369.99
+        ];
+
+    if(type==="augmented")
+        freqs=[
+            261.63,
+            329.63,
+            415.30
+        ];
+
+    freqs.forEach(freq=>{
+
+        playTone(
+            freq,
+            audioCtx.currentTime
+        );
+
+    });
+}
+
+document
+.querySelectorAll(
+    ".dragNote"
+)
+.forEach(note=>{
+
+    note.addEventListener(
+        "dragstart",
+        e=>{
+
+            e.dataTransfer
+            .setData(
+                "text",
+                note.textContent
+            );
+
+        }
+    );
+
+});
+
+document
+.querySelectorAll(
+    ".dropZone"
+)
+.forEach(zone=>{
+
+    zone.addEventListener(
+        "dragover",
+        e=>e.preventDefault()
+    );
+
+    zone.addEventListener(
+        "drop",
+        e=>{
+
+            e.preventDefault();
+
+            zone.textContent =
+            e.dataTransfer
+            .getData(
+                "text"
+            );
+
+        }
+    );
+
+});
+
+function checkBuilder(){
+
+    const notes =
+    [
+        ...document
+        .querySelectorAll(
+            ".dropZone"
+        )
+    ]
+    .map(
+        d=>d.textContent
+    )
+    .sort()
+    .join("");
+
+    if(notes==="CEG"){
+
+        builderFeedback
+        .textContent =
+        "✓ Correct!";
+
+    }
+
+    else{
+
+        builderFeedback
+        .textContent =
+        "✗ Try again.";
+
+    }
+}
+
+function newQuestion(){
+
+const questions = [
+
+{
+q:"Which notes form a Major triad?",
+a:"Root Third Fifth",
+choices:[
+"Root Third Fifth",
+"Root Fourth Fifth",
+"Root Fifth Seventh",
+"Root Second Fifth"
+]
+},
+
+{
+q:"Which triad uses M3 + m3?",
+a:"Major",
+choices:[
+"Major",
+"Minor",
+"Diminished",
+"Augmented"
+]
+},
+
+{
+q:"Which triad uses m3 + M3?",
+a:"Minor",
+choices:[
+"Major",
+"Minor",
+"Diminished",
+"Augmented"
+]
+},
+
+{
+q:"Which triad uses m3 + m3?",
+a:"Diminished",
+choices:[
+"Major",
+"Minor",
+"Diminished",
+"Augmented"
+]
+},
+
+{
+q:"Which triad uses M3 + M3?",
+a:"Augmented",
+choices:[
+"Major",
+"Minor",
+"Diminished",
+"Augmented"
+]
+}
+
+];
+
+const q =
+questions[
+Math.floor(
+Math.random()*
+questions.length
+)
+];
+
+answer =
+q.a;
+
+question.textContent =
+q.q;
+
+answers.innerHTML =
+"";
+
+q.choices.forEach(choice=>{
+
+const btn =
+document.createElement(
+"button"
+);
+
+btn.textContent =
+choice;
+
+btn.onclick =
+()=>checkAnswer(choice);
+
+answers.appendChild(btn);
+
+});
+
+}
+
+function checkAnswer(choice){
+
+total++;
+
+if(choice===answer){
+
+correct++;
+
+feedback.textContent =
+"✓ Correct";
+
+feedback.className =
+"correct";
+}
+else{
+
+feedback.textContent =
+"✗ Incorrect";
+
+feedback.className =
+"incorrect";
+}
+
+correct.innerText =
+window.correct;
+
+total.innerText =
+window.total;
+
+document
+.getElementById(
+"correct"
+)
+.textContent =
+correct;
+
+document
+.getElementById(
+"total"
+)
+.textContent =
+total;
+
+}
+
+createKeyboard();
+drawStaff();
+
+</script>
+
+</body>
+</html>
