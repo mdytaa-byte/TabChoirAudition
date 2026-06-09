@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Signatures</title>
+
+<style>
+
+body{
+    font-family:Arial,sans-serif;
+    max-width:1000px;
+    margin:20px auto;
+    padding:20px;
+    background:#f4f6f8;
+}
+
+.section{
+    background:white;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,.1);
+}
+
+h1,h2{
+    color:#2c3e50;
+}
+
+button{
+    padding:10px 16px;
+    margin:5px;
+    cursor:pointer;
+}
+
+.timeSig{
+    font-size:60px;
+    font-weight:bold;
+    line-height:1;
+    display:inline-block;
+    text-align:center;
+    margin:20px;
+}
+
+.beats{
+    display:flex;
+    gap:10px;
+    margin-top:20px;
+}
+
+.beat{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    background:#d1d5db;
+}
+
+.accent{
+    background:#3b82f6;
+}
+
+#feedback{
+    font-weight:bold;
+    min-height:30px;
+}
+
+.correct{
+    color:green;
+}
+
+.incorrect{
+    color:crimson;
+}
+
+</style>
+</head>
+<body>
+
+<h1>Time Signatures</h1>
+
+<div class="section">
+
+<h2>What Does a Time Signature Mean?</h2>
+
+<div class="timeSig">
+4<br>4
+</div>
+
+<p>
+The top number tells how many beats are in each measure.
+</p>
+
+<p>
+The bottom number tells which note value receives one beat.
+</p>
+
+<ul>
+<li>2 = Half Note</li>
+<li>4 = Quarter Note</li>
+<li>8 = Eighth Note</li>
+</ul>
+
+</div>
+
+<div class="section">
+
+<h2>Common Time Signatures</h2>
+
+<table border="1" cellpadding="8">
+
+<tr>
+<th>Time Signature</th>
+<th>Meaning</th>
+</tr>
+
+<tr>
+<td>2/4</td>
+<td>2 quarter-note beats</td>
+</tr>
+
+<tr>
+<td>3/4</td>
+<td>3 quarter-note beats</td>
+</tr>
+
+<tr>
+<td>4/4</td>
+<td>4 quarter-note beats</td>
+</tr>
+
+<tr>
+<td>6/8</td>
+<td>2 groups of 3 eighth notes</td>
+</tr>
+
+<tr>
+<td>9/8</td>
+<td>3 groups of 3 eighth notes</td>
+</tr>
+
+<tr>
+<td>12/8</td>
+<td>4 groups of 3 eighth notes</td>
+</tr>
+
+</table>
+
+</div>
+
+<div class="section">
+
+<h2>Simple vs Compound Meter</h2>
+
+<p>
+Simple meter divides each beat into 2 parts.
+</p>
+
+<ul>
+<li>2/4</li>
+<li>3/4</li>
+<li>4/4</li>
+</ul>
+
+<p>
+Compound meter divides each beat into 3 parts.
+</p>
+
+<ul>
+<li>6/8</li>
+<li>9/8</li>
+<li>12/8</li>
+</ul>
+
+</div>
+
+<div class="section">
+
+<h2>Visual Beat Groupings</h2>
+
+<button onclick="showMeter('2')">
+2/4
+</button>
+
+<button onclick="showMeter('3')">
+3/4
+</button>
+
+<button onclick="showMeter('4')">
+4/4
+</button>
+
+<button onclick="showMeter('6')">
+6/8
+</button>
+
+<div
+id="meterDisplay"
+class="beats">
+</div>
+
+</div>
+
+<div class="section">
+
+<h2>Practice</h2>
+
+<button onclick="newPractice()">
+New Practice Question
+</button>
+
+<p id="practiceQuestion"></p>
+
+<div id="practiceAnswers"></div>
+
+<div id="feedback"></div>
+
+</div>
+
+<div class="section">
+
+<h2>Assessment</h2>
+
+<button onclick="newAssessment()">
+New Assessment Question
+</button>
+
+<p id="assessmentQuestion"></p>
+
+<div id="assessmentAnswers"></div>
+
+<p>
+
+Score:
+<span id="correct">0</span>
+/
+<span id="total">0</span>
+
+</p>
+
+</div>
+
+<script>
+
+let answer = "";
+
+let correct = 0;
+let total = 0;
+
+function showMeter(type){
+
+    const div =
+    document.getElementById(
+        "meterDisplay"
+    );
+
+    div.innerHTML = "";
+
+    if(type==="2"){
+
+        for(let i=0;i<2;i++){
+
+            const beat =
+            document.createElement(
+                "div"
+            );
+
+            beat.className =
+            "beat";
+
+            if(i===0)
+                beat.classList.add(
+                    "accent"
+                );
+
+            div.appendChild(
+                beat
+            );
+        }
+    }
+
+    if(type==="3"){
+
+        for(let i=0;i<3;i++){
+
+            const beat =
+            document.createElement(
+                "div"
+            );
+
+            beat.className =
+            "beat";
+
+            if(i===0)
+                beat.classList.add(
+                    "accent"
+                );
+
+            div.appendChild(
+                beat
+            );
+        }
+    }
+
+    if(type==="4"){
+
+        for(let i=0;i<4;i++){
+
+            const beat =
+            document.createElement(
+                "div"
+            );
+
+            beat.className =
+            "beat";
+
+            if(i===0)
+                beat.classList.add(
+                    "accent"
+                );
+
+            div.appendChild(
+                beat
+            );
+        }
+    }
+
+    if(type==="6"){
+
+        for(let i=0;i<6;i++){
+
+            const beat =
+            document.createElement(
+                "div"
+            );
+
+            beat.className =
+            "beat";
+
+            if(i===0 || i===3)
+                beat.classList.add(
+                    "accent"
+                );
+
+            div.appendChild(
+                beat
+            );
+        }
+    }
+}
+
+function newPractice(){
+
+    const questions = [
+
+{
+q:"In 3/4 time, how many beats are in each measure?",
+a:"3",
+choices:["2","3","4","6"]
+},
+
+{
+q:"Which note receives one beat in 4/4 time?",
+a:"Quarter Note",
+choices:[
+"Whole Note",
+"Half Note",
+"Quarter Note",
+"Eighth Note"
+]
+},
+
+{
+q:"Which is a compound meter?",
+a:"6/8",
+choices:[
+"2/4",
+"3/4",
+"4/4",
+"6/8"
+]
+}
+
+];
+
+    buildQuestion(
+        questions,
+        "practiceQuestion",
+        "practiceAnswers"
+    );
+}
+
+function newAssessment(){
+
+    const questions = [
+
+{
+q:"What does the top number represent?",
+a:"Beats per measure",
+choices:[
+"Beats per measure",
+"Beat value",
+"Tempo",
+"Dynamics"
+]
+},
+
+{
+q:"What does the bottom number represent?",
+a:"Note value receiving one beat",
+choices:[
+"Number of measures",
+"Tempo",
+"Note value receiving one beat",
+"Key signature"
+]
+},
+
+{
+q:"Which is simple meter?",
+a:"4/4",
+choices:[
+"6/8",
+"9/8",
+"12/8",
+"4/4"
+]
+},
+
+{
+q:"How many groups of three are in 9/8?",
+a:"3",
+choices:["2","3","4","9"]
+}
+
+];
+
+    buildQuestion(
+        questions,
+        "assessmentQuestion",
+        "assessmentAnswers"
+    );
+}
+
+function buildQuestion(
+    source,
+    questionId,
+    answerId
+){
+
+    const q =
+    source[
+        Math.floor(
+            Math.random()*
+            source.length
+        )
+    ];
+
+    answer = q.a;
+
+    document
+    .getElementById(
+        questionId
+    )
+    .textContent =
+    q.q;
+
+    const container =
+    document
+    .getElementById(
+        answerId
+    );
+
+    container.innerHTML =
+    "";
+
+    q.choices.forEach(choice=>{
+
+        const btn =
+        document.createElement(
+            "button"
+        );
+
+        btn.textContent =
+        choice;
+
+        btn.onclick =
+        ()=>checkAnswer(
+            choice
+        );
+
+        container.appendChild(
+            btn
+        );
+    });
+}
+
+function checkAnswer(choice){
+
+    total++;
+
+    const feedback =
+    document.getElementById(
+        "feedback"
+    );
+
+    if(choice===answer){
+
+        correct++;
+
+        feedback.textContent =
+        "✓ Correct";
+
+        feedback.className =
+        "correct";
+    }
+
+    else{
+
+        feedback.textContent =
+        "✗ Incorrect";
+
+        feedback.className =
+        "incorrect";
+    }
+
+    document
+    .getElementById(
+        "correct"
+    )
+    .textContent =
+    correct;
+
+    document
+    .getElementById(
+        "total"
+    )
+    .textContent =
+    total;
+}
+
+showMeter("4");
+
+</script>
+
+</body>
+</html>

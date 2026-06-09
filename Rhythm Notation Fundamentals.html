@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rhythm Notation Fundamentals</title>
+
+<style>
+body{
+    font-family:Arial,sans-serif;
+    max-width:1000px;
+    margin:20px auto;
+    padding:20px;
+    background:#f5f7fa;
+}
+
+.section{
+    background:white;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,.1);
+}
+
+h1,h2{
+    color:#2c3e50;
+}
+
+button{
+    padding:10px 16px;
+    margin:5px;
+    cursor:pointer;
+}
+
+.noteCard{
+    display:inline-block;
+    padding:15px;
+    margin:8px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    background:#fafafa;
+    min-width:120px;
+}
+
+#feedback{
+    min-height:30px;
+    font-weight:bold;
+}
+
+.correct{
+    color:green;
+}
+
+.incorrect{
+    color:crimson;
+}
+
+.beatBar{
+    width:100%;
+    height:25px;
+    background:#ddd;
+    border-radius:20px;
+    overflow:hidden;
+    margin-top:10px;
+}
+
+.fill{
+    width:0%;
+    height:100%;
+    background:#3b82f6;
+}
+
+table{
+    border-collapse:collapse;
+}
+
+td,th{
+    border:1px solid #999;
+    padding:8px;
+}
+</style>
+</head>
+<body>
+
+<h1>Rhythm Notation Fundamentals</h1>
+
+<div class="section">
+
+<h2>1. Note Values</h2>
+
+<p>
+Music measures duration using note values.
+</p>
+
+<div class="noteCard">
+Whole Note<br>
+4 beats
+</div>
+
+<div class="noteCard">
+Half Note<br>
+2 beats
+</div>
+
+<div class="noteCard">
+Quarter Note<br>
+1 beat
+</div>
+
+<div class="noteCard">
+Eighth Note<br>
+½ beat
+</div>
+
+<div class="noteCard">
+Sixteenth Note<br>
+¼ beat
+</div>
+
+<br>
+
+<button onclick="playDuration(4)">
+Whole Note
+</button>
+
+<button onclick="playDuration(2)">
+Half Note
+</button>
+
+<button onclick="playDuration(1)">
+Quarter Note
+</button>
+
+<button onclick="playDuration(.5)">
+Eighth Note
+</button>
+
+<div class="beatBar">
+<div
+id="fill"
+class="fill">
+</div>
+</div>
+
+</div>
+
+<div class="section">
+
+<h2>2. Rests</h2>
+
+<p>
+Rests represent silence.
+</p>
+
+<table>
+
+<tr>
+<th>Rest</th>
+<th>Value</th>
+</tr>
+
+<tr>
+<td>Whole Rest</td>
+<td>4 beats</td>
+</tr>
+
+<tr>
+<td>Half Rest</td>
+<td>2 beats</td>
+</tr>
+
+<tr>
+<td>Quarter Rest</td>
+<td>1 beat</td>
+</tr>
+
+<tr>
+<td>Eighth Rest</td>
+<td>½ beat</td>
+</tr>
+
+</table>
+
+</div>
+
+<div class="section">
+
+<h2>3. Dots</h2>
+
+<p>
+A dot adds half the value of the original note.
+</p>
+
+<ul>
+<li>Quarter = 1 beat</li>
+<li>Dotted Quarter = 1.5 beats</li>
+<li>Half = 2 beats</li>
+<li>Dotted Half = 3 beats</li>
+</ul>
+
+</div>
+
+<div class="section">
+
+<h2>4. Ties</h2>
+
+<p>
+A tie combines note values.
+</p>
+
+<p>
+Quarter + Quarter tied = 2 beats
+</p>
+
+<p>
+Half + Quarter tied = 3 beats
+</p>
+
+</div>
+
+<div class="section">
+
+<h2>5. Beams</h2>
+
+<p>
+Beams connect groups of eighth and sixteenth notes.
+</p>
+
+<p>
+♫ ♫ ♫ ♫
+</p>
+
+<p>
+Instead of separate flags, notes share beams.
+</p>
+
+</div>
+
+<div class="section">
+
+<h2>6. Rhythm Math</h2>
+
+<table>
+
+<tr>
+<th>Equals One Whole Note</th>
+</tr>
+
+<tr>
+<td>2 Half Notes</td>
+</tr>
+
+<tr>
+<td>4 Quarter Notes</td>
+</tr>
+
+<tr>
+<td>8 Eighth Notes</td>
+</tr>
+
+<tr>
+<td>16 Sixteenth Notes</td>
+</tr>
+
+</table>
+
+</div>
+
+<div class="section">
+
+<h2>Practice Quiz</h2>
+
+<button onclick="newQuestion()">
+New Question
+</button>
+
+<p id="question"></p>
+
+<div id="answers"></div>
+
+<div id="feedback"></div>
+
+<p>
+Score:
+<span id="correct">0</span>
+/
+<span id="total">0</span>
+</p>
+
+</div>
+
+<script>
+
+const AudioContext =
+window.AudioContext ||
+window.webkitAudioContext;
+
+const audioCtx =
+new AudioContext();
+
+let answer = "";
+
+let correct = 0;
+let total = 0;
+
+function playDuration(beats){
+
+    audioCtx.resume();
+
+    const osc =
+    audioCtx.createOscillator();
+
+    const gain =
+    audioCtx.createGain();
+
+    osc.frequency.value =
+    440;
+
+    gain.gain.value =
+    .2;
+
+    osc.connect(gain);
+    gain.connect(
+        audioCtx.destination
+    );
+
+    osc.start();
+
+    osc.stop(
+        audioCtx.currentTime +
+        beats*.4
+    );
+
+    const fill =
+    document.getElementById(
+        "fill"
+    );
+
+    fill.style.width =
+    "0%";
+
+    setTimeout(()=>{
+
+        fill.style.transition =
+        "all " +
+        beats*.4 +
+        "s linear";
+
+        fill.style.width =
+        "100%";
+
+    },50);
+
+    setTimeout(()=>{
+
+        fill.style.transition =
+        "none";
+
+        fill.style.width =
+        "0%";
+
+    },
+    beats*400+500);
+}
+
+function newQuestion(){
+
+    const questions = [
+
+{
+q:"How many beats does a whole note receive?",
+a:"4",
+choices:["1","2","3","4"]
+},
+
+{
+q:"How many beats does a half note receive?",
+a:"2",
+choices:["1","2","3","4"]
+},
+
+{
+q:"How many quarter notes equal a whole note?",
+a:"4",
+choices:["2","4","6","8"]
+},
+
+{
+q:"How many beats does a dotted half note receive?",
+a:"3",
+choices:["2","3","4","5"]
+},
+
+{
+q:"A tie does what?",
+a:"Combines note durations",
+choices:[
+"Raises pitch",
+"Combines note durations",
+"Creates rests",
+"Changes clef"
+]
+},
+
+{
+q:"Beams are commonly used with:",
+a:"Eighth Notes",
+choices:[
+"Whole Notes",
+"Half Notes",
+"Eighth Notes",
+"Rests"
+]
+},
+
+{
+q:"How many eighth notes equal a whole note?",
+a:"8",
+choices:["2","4","8","16"]
+},
+
+{
+q:"How many beats does a quarter note receive?",
+a:"1",
+choices:["1","2","3","4"]
+}
+
+];
+
+    const q =
+    questions[
+        Math.floor(
+            Math.random()*
+            questions.length
+        )
+    ];
+
+    answer =
+    q.a;
+
+    document
+    .getElementById(
+        "question"
+    )
+    .textContent =
+    q.q;
+
+    const answers =
+    document
+    .getElementById(
+        "answers"
+    );
+
+    answers.innerHTML =
+    "";
+
+    q.choices.forEach(c=>{
+
+        const btn =
+        document.createElement(
+            "button"
+        );
+
+        btn.textContent =
+        c;
+
+        btn.onclick =
+        ()=>checkAnswer(c);
+
+        answers.appendChild(
+            btn
+        );
+
+    });
+
+    document
+    .getElementById(
+        "feedback"
+    )
+    .textContent =
+    "";
+}
+
+function checkAnswer(choice){
+
+    total++;
+
+    const feedback =
+    document
+    .getElementById(
+        "feedback"
+    );
+
+    if(choice===answer){
+
+        correct++;
+
+        feedback.textContent =
+        "✓ Correct";
+
+        feedback.className =
+        "correct";
+    }
+
+    else{
+
+        feedback.textContent =
+        "✗ Incorrect";
+
+        feedback.className =
+        "incorrect";
+    }
+
+    document
+    .getElementById(
+        "correct"
+    )
+    .textContent =
+    correct;
+
+    document
+    .getElementById(
+        "total"
+    )
+    .textContent =
+    total;
+}
+
+</script>
+
+</body>
+</html>

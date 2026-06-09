@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intervals Fundamentals</title>
+
+<style>
+body{
+    font-family:Arial,sans-serif;
+    max-width:1000px;
+    margin:20px auto;
+    padding:20px;
+    background:#f5f7fa;
+}
+
+.section{
+    background:white;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,.1);
+}
+
+h1,h2{
+    color:#2c3e50;
+}
+
+button{
+    padding:10px 16px;
+    margin:5px;
+    cursor:pointer;
+}
+
+canvas{
+    border:1px solid #ccc;
+    background:white;
+}
+
+#feedback{
+    font-weight:bold;
+    min-height:30px;
+    margin-top:10px;
+}
+
+.correct{
+    color:green;
+}
+
+.incorrect{
+    color:crimson;
+}
+</style>
+</head>
+<body>
+
+<h1>Intervals Fundamentals</h1>
+
+<div class="section">
+
+<h2>1. What Is an Interval?</h2>
+
+<p>
+An interval is the distance between two pitches.
+</p>
+
+<ul>
+<li>Small distances create small intervals.</li>
+<li>Larger distances create larger intervals.</li>
+<li>Intervals can be heard and seen in notation.</li>
+</ul>
+
+<button onclick="showRandomInterval()">
+Show Random Interval
+</button>
+
+<canvas
+    id="staff"
+    width="700"
+    height="220">
+</canvas>
+
+<p id="intervalInfo"></p>
+
+</div>
+
+<div class="section">
+
+<h2>2. Melodic vs. Harmonic Intervals</h2>
+
+<p>
+A melodic interval is played one note after another.
+</p>
+
+<p>
+A harmonic interval is played at the same time.
+</p>
+
+<button onclick="playMelodic()">
+Play Melodic
+</button>
+
+<button onclick="playHarmonic()">
+Play Harmonic
+</button>
+
+</div>
+
+<div class="section">
+
+<h2>3. Interval Numbers</h2>
+
+<p>
+Interval numbers are determined by counting letter names.
+</p>
+
+<table border="1" cellpadding="6">
+<tr>
+<th>Example</th>
+<th>Interval</th>
+</tr>
+
+<tr>
+<td>C–D</td>
+<td>2nd</td>
+</tr>
+
+<tr>
+<td>C–E</td>
+<td>3rd</td>
+</tr>
+
+<tr>
+<td>C–F</td>
+<td>4th</td>
+</tr>
+
+<tr>
+<td>C–G</td>
+<td>5th</td>
+</tr>
+
+<tr>
+<td>C–A</td>
+<td>6th</td>
+</tr>
+
+<tr>
+<td>C–B</td>
+<td>7th</td>
+</tr>
+
+<tr>
+<td>C–C</td>
+<td>Octave</td>
+</tr>
+
+</table>
+
+</div>
+
+<div class="section">
+
+<h2>4. Interval Quality</h2>
+
+<p>
+Qualities describe the exact size of intervals.
+</p>
+
+<ul>
+<li>Perfect</li>
+<li>Major</li>
+<li>Minor</li>
+<li>Augmented</li>
+<li>Diminished</li>
+</ul>
+
+<p>
+Examples:
+</p>
+
+<ul>
+<li>C–E = Major 3rd</li>
+<li>C–E♭ = Minor 3rd</li>
+<li>C–F = Perfect 4th</li>
+<li>C–F♯ = Augmented 4th</li>
+<li>C–G♭ = Diminished 5th</li>
+</ul>
+
+</div>
+
+<div class="section">
+
+<h2>Practice Quiz</h2>
+
+<button onclick="newQuestion()">
+New Question
+</button>
+
+<p id="question"></p>
+
+<div id="answers"></div>
+
+<div id="feedback"></div>
+
+<p>
+Score:
+<span id="correct">0</span>
+/
+<span id="total">0</span>
+</p>
+
+</div>
+
+<script>
+
+const AudioContext =
+window.AudioContext ||
+window.webkitAudioContext;
+
+const audioCtx =
+new AudioContext();
+
+let currentAnswer = "";
+
+let correct = 0;
+let total = 0;
+
+const canvas =
+document.getElementById(
+    "staff"
+);
+
+const ctx =
+canvas.getContext("2d");
+
+const noteY = {
+    C:150,
+    D:140,
+    E:130,
+    F:120,
+    G:110,
+    A:100,
+    B:90,
+    C2:80
+};
+
+const intervals = [
+
+{
+name:"2nd",
+top:"D"
+},
+
+{
+name:"3rd",
+top:"E"
+},
+
+{
+name:"4th",
+top:"F"
+},
+
+{
+name:"5th",
+top:"G"
+},
+
+{
+name:"6th",
+top:"A"
+},
+
+{
+name:"7th",
+top:"B"
+},
+
+{
+name:"Octave",
+top:"C2"
+}
+
+];
+
+function drawStaff(){
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    for(let i=0;i<5;i++){
+
+        const y =
+        70 + i*20;
+
+        ctx.beginPath();
+
+        ctx.moveTo(50,y);
+        ctx.lineTo(650,y);
+
+        ctx.stroke();
+    }
+
+    ctx.font =
+    "60px serif";
+
+    ctx.fillText(
+        "𝄞",
+        70,
+        130
+    );
+}
+
+function drawInterval(top){
+
+    drawStaff();
+
+    drawNote(
+        250,
+        noteY.C
+    );
+
+    drawNote(
+        350,
+        noteY[top]
+    );
+}
+
+function drawNote(x,y){
+
+    ctx.beginPath();
+
+    ctx.ellipse(
+        x,
+        y,
+        10,
+        7,
+        -0.4,
+        0,
+        Math.PI*2
+    );
+
+    ctx.fill();
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x+10,
+        y
+    );
+
+    ctx.lineTo(
+        x+10,
+        y-40
+    );
+
+    ctx.stroke();
+}
+
+function showRandomInterval(){
+
+    const i =
+    intervals[
+        Math.floor(
+            Math.random()*
+            intervals.length
+        )
+    ];
+
+    drawInterval(
+        i.top
+    );
+
+    intervalInfo.textContent =
+    i.name;
+}
+
+function playTone(
+    freq,
+    start,
+    duration
+){
+
+    const osc =
+    audioCtx.createOscillator();
+
+    const gain =
+    audioCtx.createGain();
+
+    osc.frequency.value =
+    freq;
+
+    gain.gain.value =
+    0.2;
+
+    osc.connect(gain);
+
+    gain.connect(
+        audioCtx.destination
+    );
+
+    osc.start(start);
+
+    osc.stop(
+        start +
+        duration
+    );
+}
+
+async function playMelodic(){
+
+    await audioCtx.resume();
+
+    const t =
+    audioCtx.currentTime;
+
+    playTone(
+        261.63,
+        t,
+        0.8
+    );
+
+    playTone(
+        392,
+        t+1,
+        0.8
+    );
+}
+
+async function playHarmonic(){
+
+    await audioCtx.resume();
+
+    const t =
+    audioCtx.currentTime;
+
+    playTone(
+        261.63,
+        t,
+        1
+    );
+
+    playTone(
+        392,
+        t,
+        1
+    );
+}
+
+function newQuestion(){
+
+    const types = [
+
+        "melodic",
+        "harmonic",
+        "number",
+        "quality"
+
+    ];
+
+    const type =
+    types[
+        Math.floor(
+            Math.random()*
+            types.length
+        )
+    ];
+
+    let prompt;
+    let choices;
+
+    if(type==="melodic"){
+
+        prompt =
+        "An interval played one note after another is called:";
+
+        currentAnswer =
+        "Melodic";
+
+        choices = [
+            "Melodic",
+            "Harmonic"
+        ];
+    }
+
+    if(type==="harmonic"){
+
+        prompt =
+        "An interval played simultaneously is called:";
+
+        currentAnswer =
+        "Harmonic";
+
+        choices = [
+            "Melodic",
+            "Harmonic"
+        ];
+    }
+
+    if(type==="number"){
+
+        prompt =
+        "C to G is a:";
+
+        currentAnswer =
+        "5th";
+
+        choices = [
+            "3rd",
+            "4th",
+            "5th",
+            "6th"
+        ];
+    }
+
+    if(type==="quality"){
+
+        prompt =
+        "C to E is a:";
+
+        currentAnswer =
+        "Major 3rd";
+
+        choices = [
+            "Minor 3rd",
+            "Major 3rd",
+            "Perfect 4th",
+            "Perfect 5th"
+        ];
+    }
+
+    question.textContent =
+    prompt;
+
+    answers.innerHTML =
+    "";
+
+    choices.forEach(choice=>{
+
+        const btn =
+        document.createElement(
+            "button"
+        );
+
+        btn.textContent =
+        choice;
+
+        btn.onclick =
+        ()=>checkAnswer(
+            choice
+        );
+
+        answers.appendChild(
+            btn
+        );
+
+    });
+}
+
+function checkAnswer(choice){
+
+    total++;
+
+    if(choice===currentAnswer){
+
+        correct++;
+
+        feedback.textContent =
+        "✓ Correct";
+
+        feedback.className =
+        "correct";
+    }
+
+    else{
+
+        feedback.textContent =
+        "✗ Incorrect";
+
+        feedback.className =
+        "incorrect";
+    }
+
+    document
+    .getElementById(
+        "correct"
+    )
+    .textContent =
+    correct;
+
+    document
+    .getElementById(
+        "total"
+    )
+    .textContent =
+    total;
+}
+
+drawStaff();
+
+</script>
+
+</body>
+</html>

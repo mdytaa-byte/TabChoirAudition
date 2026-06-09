@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pitch Notation Fundamentals</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:1100px;margin:auto;padding:20px;background:#f4f6f8}
+.section{background:white;padding:20px;border-radius:12px;margin:15px 0}
+button{padding:8px 14px;margin:4px;cursor:pointer}
+canvas{border:1px solid #ccc;background:white}
+#feedback{font-weight:bold;margin-top:10px}
+</style>
+</head>
+<body>
+<h1>Pitch Notation Fundamentals</h1>
+
+<div class="section">
+<h2>Learn</h2>
+<ul>
+<li><b>Staff:</b> Five lines and four spaces used to show pitch.</li>
+<li><b>Clefs:</b> Treble and Bass clefs tell us which pitches the staff represents.</li>
+<li><b>Letter Names:</b> A B C D E F G repeat continuously.</li>
+<li><b>Ledger Lines:</b> Short lines above and below the staff.</li>
+<li><b>Accidentals:</b> ♯ sharp, ♭ flat, ♮ natural.</li>
+<li><b>Enharmonic Notes:</b> C♯ and D♭ sound the same but are written differently.</li>
+<li><b>Octaves:</b> Notes with the same letter name at different pitch levels.</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>Interactive Staff</h2>
+<canvas id="staff" width="700" height="180"></canvas><br>
+<button onclick="newNote()">Show Random Note</button>
+<p id="notePrompt">Identify the note.</p>
+<div id="answers"></div>
+<div id="feedback"></div>
+</div>
+
+<div class="section">
+<h2>Accidentals Demo</h2>
+<p>C → C♯ → D♭ (enharmonic)</p>
+<button onclick="playFreq(261.63)">C</button>
+<button onclick="playFreq(277.18)">C♯</button>
+<button onclick="playFreq(277.18)">D♭</button>
+</div>
+
+<div class="section">
+<h2>Assessment</h2>
+<button onclick="newQuestion()">New Question</button>
+<p id="question"></p>
+<div id="quizAnswers"></div>
+<p>Score: <span id="score">0</span>/<span id="total">0</span></p>
+</div>
+
+<script>
+const ctxAudio=new(window.AudioContext||window.webkitAudioContext)();
+let currentAnswer="",score=0,total=0;
+
+const notes=[
+ {name:"E4",y:130},
+ {name:"F4",y:120},
+ {name:"G4",y:110},
+ {name:"A4",y:100},
+ {name:"B4",y:90},
+ {name:"C5",y:80},
+ {name:"D5",y:70},
+ {name:"E5",y:60},
+ {name:"F5",y:50}
+];
+
+function drawStaff(){
+ const c=document.getElementById("staff");
+ const x=c.getContext("2d");
+ x.clearRect(0,0,c.width,c.height);
+ for(let i=0;i<5;i++){
+   let y=50+i*20;
+   x.beginPath();
+   x.moveTo(50,y);
+   x.lineTo(650,y);
+   x.stroke();
+ }
+ x.font="60px serif";
+ x.fillText("𝄞",60,105);
+}
+
+function drawNote(y){
+ drawStaff();
+ const c=document.getElementById("staff");
+ const x=c.getContext("2d");
+ x.beginPath();
+ x.ellipse(350,y,10,7,-0.5,0,Math.PI*2);
+ x.fill();
+ x.beginPath();
+ x.moveTo(360,y);
+ x.lineTo(360,y-40);
+ x.stroke();
+}
+
+function newNote(){
+ const note=notes[Math.floor(Math.random()*notes.length)];
+ currentAnswer=note.name;
+ drawNote(note.y);
+
+ const choices=[note.name];
+ while(choices.length<4){
+   let n=notes[Math.floor(Math.random()*notes.length)].name;
+   if(!choices.includes(n)) choices.push(n);
+ }
+ choices.sort(()=>Math.random()-0.5);
+
+ answers.innerHTML="";
+ choices.forEach(c=>{
+   const b=document.createElement("button");
+   b.textContent=c;
+   b.onclick=()=>{
+      feedback.textContent=(c===currentAnswer?"✓ Correct":"✗ Incorrect");
+   };
+   answers.appendChild(b);
+ });
+}
+
+function playFreq(freq){
+ ctxAudio.resume();
+ const o=ctxAudio.createOscillator();
+ const g=ctxAudio.createGain();
+ o.frequency.value=freq;
+ o.connect(g); g.connect(ctxAudio.destination);
+ o.start();
+ o.stop(ctxAudio.currentTime+1);
+}
+
+function newQuestion(){
+ const types=["clef","ledger","accidental","enharmonic","octave"];
+ const t=types[Math.floor(Math.random()*types.length)];
+
+ let q="",ans="",choices=[];
+
+ if(t==="clef"){
+   q="Which clef is commonly used for higher pitches?";
+   ans="Treble";
+   choices=["Treble","Bass","Alto","Tenor"];
+ }
+ if(t==="ledger"){
+   q="What are ledger lines used for?";
+   ans="Notes above or below the staff";
+   choices=[ans,"Dynamics","Rhythm","Tempo"];
+ }
+ if(t==="accidental"){
+   q="Which symbol raises a note by a half step?";
+   ans="Sharp";
+   choices=["Sharp","Flat","Natural","Rest"];
+ }
+ if(t==="enharmonic"){
+   q="Which pair is enharmonic?";
+   ans="C♯ and D♭";
+   choices=[ans,"C and D","E and F","A and B"];
+ }
+ if(t==="octave"){
+   q="What is an octave?";
+   ans="Same letter name at a higher or lower pitch";
+   choices=[ans,"A rhythm pattern","A clef","A dynamic"];
+ }
+
+ currentAnswer=ans;
+ question.textContent=q;
+ quizAnswers.innerHTML="";
+
+ choices.sort(()=>Math.random()-0.5);
+
+ choices.forEach(c=>{
+   const b=document.createElement("button");
+   b.textContent=c;
+   b.onclick=()=>{
+      total++;
+      if(c===currentAnswer) score++;
+      document.getElementById("score").textContent=score;
+      document.getElementById("total").textContent=total;
+   };
+   quizAnswers.appendChild(b);
+ });
+}
+
+drawStaff();
+</script>
+</body>
+</html>

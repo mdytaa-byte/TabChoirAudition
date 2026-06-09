@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Major and Minor Scales</title>
+
+<style>
+
+body{
+    font-family:Arial,sans-serif;
+    max-width:1000px;
+    margin:20px auto;
+    padding:20px;
+    background:#f4f6f8;
+}
+
+.section{
+    background:white;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,.1);
+}
+
+h1,h2{
+    color:#2c3e50;
+}
+
+button{
+    padding:10px 16px;
+    margin:5px;
+    cursor:pointer;
+}
+
+.scale{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:10px;
+}
+
+.degree{
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    background:#eef2ff;
+}
+
+#feedback{
+    font-weight:bold;
+    min-height:30px;
+}
+
+.correct{
+    color:green;
+}
+
+.incorrect{
+    color:crimson;
+}
+
+</style>
+</head>
+<body>
+
+<h1>Major and Minor Scales</h1>
+
+<div class="section">
+
+<h2>What Is a Scale?</h2>
+
+<p>
+A scale is an organized collection of pitches arranged from low to high.
+</p>
+
+<p>
+The first note is called the <strong>tonic</strong> or keynote.
+</p>
+
+</div>
+
+<div class="section">
+
+<h2>Major Scale Pattern</h2>
+
+<p>
+
+Whole – Whole – Half – Whole – Whole – Whole – Half
+
+</p>
+
+<div class="scale">
+
+<div class="degree">C</div>
+<div class="degree">D</div>
+<div class="degree">E</div>
+<div class="degree">F</div>
+<div class="degree">G</div>
+<div class="degree">A</div>
+<div class="degree">B</div>
+<div class="degree">C</div>
+
+</div>
+
+</div>
+
+<div class="section">
+
+<h2>Natural Minor Scale Pattern</h2>
+
+<p>
+
+Whole – Half – Whole – Whole – Half – Whole – Whole
+
+</p>
+
+<div class="scale">
+
+<div class="degree">A</div>
+<div class="degree">B</div>
+<div class="degree">C</div>
+<div class="degree">D</div>
+<div class="degree">E</div>
+<div class="degree">F</div>
+<div class="degree">G</div>
+<div class="degree">A</div>
+
+</div>
+
+</div>
+
+<div class="section">
+
+<h2>Scale Degree Names</h2>
+
+<table border="1" cellpadding="8">
+
+<tr>
+<th>Degree</th>
+<th>Name</th>
+</tr>
+
+<tr><td>1</td><td>Tonic</td></tr>
+<tr><td>2</td><td>Supertonic</td></tr>
+<tr><td>3</td><td>Mediant</td></tr>
+<tr><td>4</td><td>Subdominant</td></tr>
+<tr><td>5</td><td>Dominant</td></tr>
+<tr><td>6</td><td>Submediant</td></tr>
+<tr><td>7</td><td>Leading Tone</td></tr>
+
+</table>
+
+</div>
+
+<div class="section">
+
+<h2>Modes</h2>
+
+<p>
+Modes are scales built from different starting points within a scale.
+</p>
+
+<ul>
+<li>Ionian = Major Scale</li>
+<li>Aeolian = Natural Minor Scale</li>
+<li>Dorian</li>
+<li>Phrygian</li>
+<li>Lydian</li>
+<li>Mixolydian</li>
+<li>Locrian</li>
+</ul>
+
+<p>
+For now, remember:
+</p>
+
+<ul>
+<li>Ionian = Major</li>
+<li>Aeolian = Minor</li>
+</ul>
+
+</div>
+
+<div class="section">
+
+<h2>Listen to a Scale</h2>
+
+<button onclick="playMajor()">
+Play Major Scale
+</button>
+
+<button onclick="playMinor()">
+Play Minor Scale
+</button>
+
+</div>
+
+<div class="section">
+
+<h2>Practice Quiz</h2>
+
+<button onclick="newQuestion()">
+New Question
+</button>
+
+<p id="question"></p>
+
+<div id="answers"></div>
+
+<div id="feedback"></div>
+
+<p>
+Score:
+<span id="correct">0</span>
+/
+<span id="total">0</span>
+</p>
+
+</div>
+
+<script>
+
+const AudioContext =
+window.AudioContext ||
+window.webkitAudioContext;
+
+const audioCtx =
+new AudioContext();
+
+let answer = "";
+
+let correct = 0;
+let total = 0;
+
+function playTone(freq,start){
+
+    const osc =
+    audioCtx.createOscillator();
+
+    const gain =
+    audioCtx.createGain();
+
+    osc.frequency.value =
+    freq;
+
+    gain.gain.value =
+    .2;
+
+    osc.connect(gain);
+    gain.connect(
+        audioCtx.destination
+    );
+
+    osc.start(start);
+
+    osc.stop(start+.4);
+}
+
+async function playScale(notes){
+
+    await audioCtx.resume();
+
+    const start =
+    audioCtx.currentTime;
+
+    notes.forEach((freq,i)=>{
+
+        playTone(
+            freq,
+            start+i*.45
+        );
+
+    });
+}
+
+function playMajor(){
+
+    playScale([
+        261.63,
+        293.66,
+        329.63,
+        349.23,
+        392.00,
+        440.00,
+        493.88,
+        523.25
+    ]);
+}
+
+function playMinor(){
+
+    playScale([
+        220.00,
+        246.94,
+        261.63,
+        293.66,
+        329.63,
+        349.23,
+        392.00,
+        440.00
+    ]);
+}
+
+function newQuestion(){
+
+    const questions = [
+
+{
+q:"What is the first note of a scale called?",
+a:"Tonic",
+choices:[
+"Tonic",
+"Dominant",
+"Mediant",
+"Leading Tone"
+]
+},
+
+{
+q:"What pattern describes a major scale?",
+a:"W-W-H-W-W-W-H",
+choices:[
+"W-W-H-W-W-W-H",
+"W-H-W-W-H-W-W",
+"H-W-W-W-H-W-W",
+"W-W-W-H-W-H-W"
+]
+},
+
+{
+q:"What pattern describes a natural minor scale?",
+a:"W-H-W-W-H-W-W",
+choices:[
+"W-W-H-W-W-W-H",
+"W-H-W-W-H-W-W",
+"H-W-W-W-H-W-W",
+"W-W-W-H-W-H-W"
+]
+},
+
+{
+q:"What is scale degree 5 called?",
+a:"Dominant",
+choices:[
+"Tonic",
+"Dominant",
+"Mediant",
+"Submediant"
+]
+},
+
+{
+q:"What is scale degree 7 called?",
+a:"Leading Tone",
+choices:[
+"Subdominant",
+"Leading Tone",
+"Mediant",
+"Supertonic"
+]
+},
+
+{
+q:"Which mode is equivalent to the major scale?",
+a:"Ionian",
+choices:[
+"Ionian",
+"Dorian",
+"Locrian",
+"Aeolian"
+]
+},
+
+{
+q:"Which mode is equivalent to the natural minor scale?",
+a:"Aeolian",
+choices:[
+"Ionian",
+"Lydian",
+"Aeolian",
+"Mixolydian"
+]
+}
+
+];
+
+    const q =
+    questions[
+        Math.floor(
+            Math.random()*
+            questions.length
+        )
+    ];
+
+    answer = q.a;
+
+    document
+    .getElementById(
+        "question"
+    )
+    .textContent =
+    q.q;
+
+    const answers =
+    document
+    .getElementById(
+        "answers"
+    );
+
+    answers.innerHTML =
+    "";
+
+    q.choices.forEach(choice=>{
+
+        const btn =
+        document.createElement(
+            "button"
+        );
+
+        btn.textContent =
+        choice;
+
+        btn.onclick =
+        ()=>checkAnswer(
+            choice
+        );
+
+        answers.appendChild(
+            btn
+        );
+
+    });
+
+}
+
+function checkAnswer(choice){
+
+    total++;
+
+    const feedback =
+    document
+    .getElementById(
+        "feedback"
+    );
+
+    if(choice===answer){
+
+        correct++;
+
+        feedback.textContent =
+        "✓ Correct";
+
+        feedback.className =
+        "correct";
+    }
+
+    else{
+
+        feedback.textContent =
+        "✗ Incorrect";
+
+        feedback.className =
+        "incorrect";
+    }
+
+    document
+    .getElementById(
+        "correct"
+    )
+    .textContent =
+    correct;
+
+    document
+    .getElementById(
+        "total"
+    )
+    .textContent =
+    total;
+}
+
+</script>
+
+</body>
+</html>

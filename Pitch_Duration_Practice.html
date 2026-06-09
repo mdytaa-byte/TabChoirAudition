@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Music Fundamentals Lab V2</title>
+<style>
+body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:linear-gradient(135deg,#1e293b,#334155);color:#fff}
+header{text-align:center;padding:20px}
+.card{max-width:1000px;margin:20px auto;background:rgba(255,255,255,.08);backdrop-filter:blur(8px);padding:20px;border-radius:16px}
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+button{padding:10px 16px;border:none;border-radius:10px;cursor:pointer}
+.tab{display:none}
+.tab.active{display:block}
+.visual{height:120px;display:flex;align-items:flex-end;justify-content:center;gap:6px;margin:15px 0}
+.bar{width:16px;background:#60a5fa;border-radius:4px;animation:pulse 1s infinite alternate}
+@keyframes pulse{from{height:20px}to{height:100px}}
+canvas{background:#0f172a;border-radius:10px;width:100%;max-width:700px;height:160px}
+.score{font-size:1.2em;font-weight:bold}
+</style>
+</head>
+<body>
+<header><h1>Music Fundamentals Lab V2</h1><p>Learn • Explore • Practice • Assess</p></header>
+
+<div class="card">
+<div class="tabs">
+<button onclick="show('pitch')">Pitch</button>
+<button onclick="show('duration')">Duration</button>
+<button onclick="show('intensity')">Intensity</button>
+<button onclick="show('review')">Assessment</button>
+</div>
+
+<div id="pitch" class="tab active">
+<h2>Pitch</h2>
+<p>Pitch tells us how high or low a sound is. Higher frequencies create higher pitches.</p>
+<input type="range" min="220" max="880" value="440" id="pitchSlider">
+<span id="pitchLabel">440 Hz</span>
+<div class="visual" id="pitchViz"></div>
+<button onclick="playPitch()">Play Pitch</button>
+</div>
+
+<div id="duration" class="tab">
+<h2>Duration</h2>
+<p>Duration is how long a sound lasts.</p>
+<input type="range" min="0.2" max="2" step="0.1" value="1" id="durSlider">
+<span id="durLabel">1.0 sec</span>
+<canvas id="durCanvas" width="700" height="160"></canvas><br>
+<button onclick="playDuration()">Play Duration</button>
+</div>
+
+<div id="intensity" class="tab">
+<h2>Intensity</h2>
+<p>Intensity (volume) is how loud or soft a sound is.</p>
+<input type="range" min="0.05" max="0.4" step="0.01" value="0.2" id="volSlider">
+<span id="volLabel">0.20</span>
+<div class="visual" id="volViz"></div>
+<button onclick="playVolume()">Play Volume</button>
+</div>
+
+<div id="review" class="tab">
+<h2>Final Assessment</h2>
+<p>Listen to two sounds. Identify what changed.</p>
+<button onclick="newQuestion()">New Question</button>
+<div style="margin-top:12px">
+<button onclick="answer('pitch')">Pitch</button>
+<button onclick="answer('duration')">Duration</button>
+<button onclick="answer('intensity')">Intensity</button>
+<button onclick="answer('none')">Nothing</button>
+</div>
+<p id="feedback"></p>
+<p class="score">Score: <span id="score">0</span>/<span id="total">0</span></p>
+</div>
+</div>
+
+<script>
+const AC=window.AudioContext||window.webkitAudioContext;
+const audio=new AC();
+let current=null,score=0,total=0;
+
+function show(id){
+ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+}
+
+function tone(freq,dur,vol=.2){
+ audio.resume();
+ const o=audio.createOscillator(), g=audio.createGain();
+ o.type='triangle'; o.frequency.value=freq;
+ g.gain.value=vol;
+ o.connect(g); g.connect(audio.destination);
+ o.start(); o.stop(audio.currentTime+dur);
+}
+
+function buildBars(id,count){
+ const el=document.getElementById(id);
+ el.innerHTML='';
+ for(let i=0;i<count;i++){
+  const d=document.createElement('div');
+  d.className='bar';
+  d.style.animationDelay=(i*0.08)+'s';
+  el.appendChild(d);
+ }
+}
+buildBars('pitchViz',20);
+buildBars('volViz',20);
+
+pitchSlider.oninput=()=>pitchLabel.textContent=pitchSlider.value+' Hz';
+durSlider.oninput=()=>{durLabel.textContent=Number(durSlider.value).toFixed(1)+' sec';drawDuration();};
+volSlider.oninput=()=>volLabel.textContent=Number(volSlider.value).toFixed(2);
+
+function playPitch(){tone(+pitchSlider.value,1,.2);}
+function playDuration(){tone(440,+durSlider.value,.2); drawDuration(true);}
+function playVolume(){tone(440,1,+volSlider.value);}
+
+function drawDuration(active=false){
+ const c=document.getElementById('durCanvas');
+ const x=c.getContext('2d');
+ x.clearRect(0,0,c.width,c.height);
+ x.fillStyle='#38bdf8';
+ const w=(+durSlider.value/2)*600;
+ x.fillRect(40,60,w,40);
+ if(active){
+   x.fillStyle='#fbbf24';
+   x.fillRect(40,60,w,40);
+ }
+}
+drawDuration();
+
+function playPair(f1,d1,v1,f2,d2,v2){
+ tone(f1,d1,v1);
+ setTimeout(()=>tone(f2,d2,v2),(d1+0.5)*1000);
+}
+
+function newQuestion(){
+ current=['pitch','duration','intensity','none'][Math.floor(Math.random()*4)];
+ feedback.textContent='';
+ if(current==='pitch'){
+   playPair(400,.8,.2,700,.8,.2);
+ }else if(current==='duration'){
+   playPair(440,.3,.2,440,1.2,.2);
+ }else if(current==='intensity'){
+   playPair(440,.8,.08,440,.8,.35);
+ }else{
+   playPair(440,.8,.2,440,.8,.2);
+ }
+}
+
+function answer(a){
+ if(!current){feedback.textContent='Play a question first.';return;}
+ total++;
+ if(a===current){score++;feedback.textContent='✓ Correct!';}
+ else{feedback.textContent='✗ Incorrect. Answer: '+current;}
+ document.getElementById('score').textContent=score;
+ document.getElementById('total').textContent=total;
+ current=null;
+}
+</script>
+</body>
+</html>

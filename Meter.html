@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meter Fundamentals</title>
+
+<style>
+
+body{
+    font-family:Arial,sans-serif;
+    max-width:1000px;
+    margin:20px auto;
+    padding:20px;
+    background:#f4f6f8;
+}
+
+.section{
+    background:white;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:12px;
+    box-shadow:0 2px 6px rgba(0,0,0,.1);
+}
+
+h1,h2{
+    color:#2c3e50;
+}
+
+button{
+    padding:10px 16px;
+    margin:5px;
+    cursor:pointer;
+}
+
+.pulseContainer{
+    display:flex;
+    justify-content:center;
+    gap:15px;
+    margin:20px 0;
+}
+
+.pulse{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    background:#d1d5db;
+    transition:.15s;
+}
+
+.active{
+    background:#3b82f6;
+    transform:scale(1.3);
+}
+
+#feedback{
+    font-weight:bold;
+    min-height:30px;
+}
+
+.correct{
+    color:green;
+}
+
+.incorrect{
+    color:crimson;
+}
+
+</style>
+</head>
+<body>
+
+<h1>Meter Fundamentals</h1>
+
+<div class="section">
+
+<h2>What Is Meter?</h2>
+
+<p>
+Meter is the way beats are grouped in music.
+</p>
+
+<p>
+A beat is the steady pulse that we tap our foot to.
+</p>
+
+<p>
+Meter organizes beats into recurring groups.
+</p>
+
+<ul>
+<li>Duple = groups of 2 beats</li>
+<li>Triple = groups of 3 beats</li>
+<li>Quadruple = groups of 4 beats</li>
+</ul>
+
+</div>
+
+<div class="section">
+
+<h2>Simple vs. Compound Meter</h2>
+
+<p>
+In simple meter, each beat divides into two parts.
+</p>
+
+<p>
+In compound meter, each beat divides into three parts.
+</p>
+
+<table border="1" cellpadding="8">
+
+<tr>
+<th>Simple</th>
+<th>Compound</th>
+</tr>
+
+<tr>
+<td>2/4</td>
+<td>6/8</td>
+</tr>
+
+<tr>
+<td>3/4</td>
+<td>9/8</td>
+</tr>
+
+<tr>
+<td>4/4</td>
+<td>12/8</td>
+</tr>
+
+</table>
+
+</div>
+
+<div class="section">
+
+<h2>Hear the Meter</h2>
+
+<button onclick="playMeter('duple')">
+Duple Meter
+</button>
+
+<button onclick="playMeter('triple')">
+Triple Meter
+</button>
+
+<button onclick="playMeter('quadruple')">
+Quadruple Meter
+</button>
+
+<button onclick="playMeter('compound')">
+Compound Meter
+</button>
+
+<div
+class="pulseContainer"
+id="visualizer">
+
+<div class="pulse"></div>
+<div class="pulse"></div>
+<div class="pulse"></div>
+<div class="pulse"></div>
+
+</div>
+
+</div>
+
+<div class="section">
+
+<h2>Practice</h2>
+
+<p>
+Listen and identify the meter.
+</p>
+
+<button onclick="newPractice()">
+New Example
+</button>
+
+<br><br>
+
+<button onclick="checkPractice('duple')">
+Duple
+</button>
+
+<button onclick="checkPractice('triple')">
+Triple
+</button>
+
+<button onclick="checkPractice('quadruple')">
+Quadruple
+</button>
+
+<button onclick="checkPractice('compound')">
+Compound
+</button>
+
+<div id="feedback"></div>
+
+</div>
+
+<div class="section">
+
+<h2>Assessment</h2>
+
+<button onclick="newAssessment()">
+New Question
+</button>
+
+<p id="question"></p>
+
+<div id="answers"></div>
+
+<p>
+
+Score:
+<span id="correct">0</span>
+/
+<span id="total">0</span>
+
+</p>
+
+</div>
+
+<script>
+
+const AudioContext =
+window.AudioContext ||
+window.webkitAudioContext;
+
+const audioCtx =
+new AudioContext();
+
+let practiceAnswer = "";
+
+let assessmentAnswer = "";
+
+let correct = 0;
+let total = 0;
+
+function pulse(freq,start,duration,volume=.2){
+
+    const osc =
+    audioCtx.createOscillator();
+
+    const gain =
+    audioCtx.createGain();
+
+    osc.frequency.value =
+    freq;
+
+    gain.gain.value =
+    volume;
+
+    osc.connect(gain);
+    gain.connect(
+        audioCtx.destination
+    );
+
+    osc.start(start);
+    osc.stop(
+        start + duration
+    );
+}
+
+function animateBeat(index){
+
+    const circles =
+    document.querySelectorAll(
+        ".pulse"
+    );
+
+    circles.forEach(c=>
+        c.classList.remove(
+            "active"
+        )
+    );
+
+    if(
+        circles[index]
+    ){
+        circles[index]
+        .classList.add(
+            "active"
+        );
+    }
+}
+
+async function playMeter(type){
+
+    await audioCtx.resume();
+
+    const start =
+    audioCtx.currentTime;
+
+    if(type==="duple"){
+
+        for(let i=0;i<4;i++){
+
+            pulse(
+                i%2===0
+                ? 700
+                : 500,
+
+                start+i*.6,
+                .15
+            );
+
+            setTimeout(
+                ()=>animateBeat(i%2),
+                i*600
+            );
+        }
+    }
+
+    if(type==="triple"){
+
+        for(let i=0;i<6;i++){
+
+            pulse(
+                i%3===0
+                ? 700
+                : 500,
+
+                start+i*.5,
+                .15
+            );
+
+            setTimeout(
+                ()=>animateBeat(i%3),
+                i*500
+            );
+        }
+    }
+
+    if(type==="quadruple"){
+
+        for(let i=0;i<8;i++){
+
+            pulse(
+                i%4===0
+                ? 700
+                : 500,
+
+                start+i*.45,
+                .15
+            );
+
+            setTimeout(
+                ()=>animateBeat(i%4),
+                i*450
+            );
+        }
+    }
+
+    if(type==="compound"){
+
+        for(let i=0;i<6;i++){
+
+            pulse(
+                i%3===0
+                ? 700
+                : 500,
+
+                start+i*.3,
+                .12
+            );
+
+            setTimeout(
+                ()=>animateBeat(i%3),
+                i*300
+            );
+        }
+    }
+}
+
+function newPractice(){
+
+    const types = [
+
+        "duple",
+        "triple",
+        "quadruple",
+        "compound"
+
+    ];
+
+    practiceAnswer =
+    types[
+        Math.floor(
+            Math.random()*
+            types.length
+        )
+    ];
+
+    playMeter(
+        practiceAnswer
+    );
+
+    feedback.textContent =
+    "";
+}
+
+function checkPractice(choice){
+
+    if(choice===practiceAnswer){
+
+        feedback.textContent =
+        "✓ Correct";
+
+        feedback.className =
+        "correct";
+    }
+
+    else{
+
+        feedback.textContent =
+        "✗ Incorrect";
+
+        feedback.className =
+        "incorrect";
+    }
+}
+
+function newAssessment(){
+
+    const questions = [
+
+{
+q:"How many beats are grouped in duple meter?",
+a:"2",
+choices:["2","3","4","6"]
+},
+
+{
+q:"How many beats are grouped in triple meter?",
+a:"3",
+choices:["2","3","4","6"]
+},
+
+{
+q:"How many beats are grouped in quadruple meter?",
+a:"4",
+choices:["2","3","4","6"]
+},
+
+{
+q:"In simple meter, beats divide into:",
+a:"2 parts",
+choices:[
+"2 parts",
+"3 parts",
+"4 parts",
+"6 parts"
+]
+},
+
+{
+q:"In compound meter, beats divide into:",
+a:"3 parts",
+choices:[
+"2 parts",
+"3 parts",
+"4 parts",
+"6 parts"
+]
+}
+
+];
+
+    const q =
+    questions[
+        Math.floor(
+            Math.random()*
+            questions.length
+        )
+    ];
+
+    assessmentAnswer =
+    q.a;
+
+    question.textContent =
+    q.q;
+
+    answers.innerHTML =
+    "";
+
+    q.choices.forEach(c=>{
+
+        const btn =
+        document.createElement(
+            "button"
+        );
+
+        btn.textContent =
+        c;
+
+        btn.onclick =
+        ()=>{
+
+            total++;
+
+            if(
+                c===assessmentAnswer
+            ){
+                correct++;
+            }
+
+            document
+            .getElementById(
+                "correct"
+            )
+            .textContent =
+            correct;
+
+            document
+            .getElementById(
+                "total"
+            )
+            .textContent =
+            total;
+        };
+
+        answers.appendChild(
+            btn
+        );
+    });
+}
+
+</script>
+
+</body>
+</html>
