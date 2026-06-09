@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Major-Minor Mode Discrimination</title>
+
+<style>
+body{
+    font-family:Arial,sans-serif;
+    max-width:900px;
+    margin:30px auto;
+    text-align:center;
+    background:#f5f7fa;
+}
+
+h1{
+    color:#2c3e50;
+}
+
+button{
+    padding:12px 18px;
+    margin:6px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+#questionType{
+    font-size:1.2em;
+    font-weight:bold;
+    margin:15px;
+}
+
+#feedback{
+    min-height:40px;
+    font-size:1.2em;
+    font-weight:bold;
+    margin-top:15px;
+}
+
+#score{
+    margin-top:15px;
+    font-size:1.1em;
+}
+</style>
+</head>
+<body>
+
+<h1>Major-Minor Mode Discrimination</h1>
+
+<div id="questionType">
+Press "New Exercise"
+</div>
+
+<button id="playBtn">New Exercise</button>
+
+<div id="answers">
+</div>
+
+<div id="feedback"></div>
+
+<div id="score">
+Correct: <span id="correct">0</span> |
+Total: <span id="total">0</span>
+</div>
+
+<script>
+
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+let currentAnswer = "";
+let total = 0;
+let correct = 0;
+
+function midiToFreq(midi){
+    return 440 * Math.pow(2,(midi-69)/12);
+}
+
+function randomChoice(arr){
+    return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function playTone(freq,start,duration,volume=0.18){
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = "triangle";
+    osc.frequency.value = freq;
+
+    gain.gain.setValueAtTime(0.0001,start);
+    gain.gain.exponentialRampToValueAtTime(volume,start+0.02);
+    gain.gain.setValueAtTime(volume,start+duration-0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001,start+duration);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(start);
+    osc.stop(start+duration);
+}
+
+function playChord(notes,start,duration){
+
+    notes.forEach(note=>{
+        playTone(
+            midiToFreq(note),
+            start,
+            duration
+        );
+    });
+}
+
+function majorChord(root){
+    return [root,root+4,root+7];
+}
+
+function minorChord(root){
+    return [root,root+3,root+7];
+}
+
+function setAnswerButtons(options){
+
+    const container =
+        document.getElementById("answers");
+
+    container.innerHTML = "";
+
+    options.forEach(option=>{
+
+        const btn =
+            document.createElement("button");
+
+        btn.textContent = option;
+
+        btn.onclick = ()=>{
+            checkAnswer(option);
+        };
+
+        container.appendChild(btn);
+    });
+}
+
+async function newExercise(){
+
+    await audioCtx.resume();
+
+    document.getElementById("feedback").textContent = "";
+
+    const type =
+        Math.random() < 0.5
+        ? "chord"
+        : "phrase";
+
+    if(type === "chord"){
+        chordExercise();
+    }else{
+        phraseExercise();
+    }
+}
+
+function chordExercise(){
+
+    document.getElementById("questionType")
+        .textContent =
+        "Chord Question: Identify the modes of the two chords.";
+
+    setAnswerButtons([
+        "Major - Major",
+        "Major - Minor",
+        "Minor - Major",
+        "Minor - Minor"
+    ]);
+
+    const root1 =
+        randomChoice([48,50,52,53,55,57]);
+
+    const root2 =
+        randomChoice([48,50,52,53,55,57]);
+
+    const mode1 =
+        Math.random() < 0.5
+        ? "Major"
+        : "Minor";
+
+    const mode2 =
+        Math.random() < 0.5
+        ? "Major"
+        : "Minor";
+
+    currentAnswer =
+        mode1 + " - " + mode2;
+
+    const chord1 =
+        mode1 === "Major"
+        ? majorChord(root1)
+        : minorChord(root1);
+
+    const chord2 =
+        mode2 === "Major"
+        ? majorChord(root2)
+        : minorChord(root2);
+
+    const start =
+        audioCtx.currentTime + 0.25;
+
+    playChord(chord1,start,1.4);
+
+    playChord(chord2,start+2.2,1.4);
+}
+
+function buildPhrase(root,mode,length){
+
+    const majorScale =
+        [0,2,4,5,7,9,11,12];
+
+    const minorScale =
+        [0,2,3,5,7,8,10,12];
+
+    const scale =
+        mode === "Major"
+        ? majorScale
+        : minorScale;
+
+    const phrase = [];
+
+    for(let i=0;i<length;i++){
+
+        phrase.push(
+            root +
+            randomChoice(scale)
+        );
+    }
+
+    phrase[0] = root;
+    phrase[length-1] = root;
+
+    return phrase;
+}
+
+function playPhrase(notes,start){
+
+    notes.forEach((note,index)=>{
+
+        playTone(
+            midiToFreq(note),
+            start + index*0.55,
+            0.45,
+            0.16
+        );
+
+    });
+}
+
+function phraseExercise(){
+
+    document.getElementById("questionType")
+        .textContent =
+        "Phrase Question: Determine the mode of the phrase.";
+
+    setAnswerButtons([
+        "Major",
+        "Minor",
+        "Major → Minor",
+        "Minor → Major"
+    ]);
+
+    const root =
+        randomChoice([60,62,64,65,67]);
+
+    const type =
+        randomChoice([
+            "Major",
+            "Minor",
+            "Major → Minor",
+            "Minor → Major"
+        ]);
+
+    currentAnswer = type;
+
+    let phrase;
+
+    if(type === "Major"){
+
+        phrase =
+            buildPhrase(
+                root,
+                "Major",
+                8
+            );
+    }
+
+    else if(type === "Minor"){
+
+        phrase =
+            buildPhrase(
+                root,
+                "Minor",
+                8
+            );
+    }
+
+    else if(type === "Major → Minor"){
+
+        phrase = [
+
+            ...buildPhrase(
+                root,
+                "Major",
+                4
+            ),
+
+            ...buildPhrase(
+                root,
+                "Minor",
+                4
+            )
+        ];
+    }
+
+    else{
+
+        phrase = [
+
+            ...buildPhrase(
+                root,
+                "Minor",
+                4
+            ),
+
+            ...buildPhrase(
+                root,
+                "Major",
+                4
+            )
+        ];
+    }
+
+    const start =
+        audioCtx.currentTime + 0.25;
+
+    playPhrase(phrase,start);
+}
+
+function checkAnswer(choice){
+
+    total++;
+
+    if(choice === currentAnswer){
+
+        correct++;
+
+        document.getElementById("feedback")
+            .textContent =
+            "✓ Correct!";
+
+        document.getElementById("feedback")
+            .style.color = "green";
+    }
+
+    else{
+
+        document.getElementById("feedback")
+            .textContent =
+            "✗ Incorrect. Answer: " +
+            currentAnswer;
+
+        document.getElementById("feedback")
+            .style.color = "crimson";
+    }
+
+    document.getElementById("correct")
+        .textContent = correct;
+
+    document.getElementById("total")
+        .textContent = total;
+}
+
+document.getElementById("playBtn")
+    .addEventListener(
+        "click",
+        newExercise
+    );
+
+</script>
+
+</body>
+</html>

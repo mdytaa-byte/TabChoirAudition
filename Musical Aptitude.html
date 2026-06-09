@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Musical Aptitude Test</title>
+
+<style>
+body{
+    font-family:Arial,sans-serif;
+    max-width:900px;
+    margin:30px auto;
+    text-align:center;
+    background:#f5f7fa;
+}
+
+h1{
+    color:#2c3e50;
+}
+
+button{
+    padding:12px 20px;
+    margin:8px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+#feedback{
+    min-height:40px;
+    font-size:1.2em;
+    font-weight:bold;
+    margin-top:20px;
+}
+
+#score{
+    margin-top:20px;
+    font-size:1.1em;
+}
+
+#stats{
+    margin-top:20px;
+    line-height:1.8;
+}
+
+#instructions{
+    max-width:700px;
+    margin:20px auto;
+}
+</style>
+</head>
+<body>
+
+<h1>Musical Aptitude</h1>
+
+<div id="instructions">
+Listen to two short musical statements. Determine whether the second example differs in:
+<ul style="display:inline-block;text-align:left;">
+<li>Neither pitch nor rhythm</li>
+<li>Pitch only</li>
+<li>Rhythm only</li>
+<li>Both pitch and rhythm</li>
+</ul>
+</div>
+
+<button id="playBtn">New Exercise</button>
+
+<div>
+    <button data-answer="same">Same</button>
+    <button data-answer="pitch">Pitch Different</button>
+    <button data-answer="rhythm">Rhythm Different</button>
+    <button data-answer="both">Both Different</button>
+</div>
+
+<div id="feedback"></div>
+
+<div id="score">
+Correct: <span id="correct">0</span> |
+Total: <span id="total">0</span>
+</div>
+
+<div id="stats">
+Same: <span id="sameStats">0/0</span><br>
+Pitch: <span id="pitchStats">0/0</span><br>
+Rhythm: <span id="rhythmStats">0/0</span><br>
+Both: <span id="bothStats">0/0</span>
+</div>
+
+<script>
+
+const AudioContext =
+window.AudioContext ||
+window.webkitAudioContext;
+
+const audioCtx =
+new AudioContext();
+
+let answer = null;
+
+let total = 0;
+let correct = 0;
+
+const categoryStats = {
+    same:{correct:0,total:0},
+    pitch:{correct:0,total:0},
+    rhythm:{correct:0,total:0},
+    both:{correct:0,total:0}
+};
+
+function randomChoice(arr){
+    return arr[
+        Math.floor(Math.random()*arr.length)
+    ];
+}
+
+function clone(obj){
+    return JSON.parse(
+        JSON.stringify(obj)
+    );
+}
+
+function midiToFreq(midi){
+    return 440 *
+    Math.pow(
+        2,
+        (midi-69)/12
+    );
+}
+
+function playTone(
+    freq,
+    start,
+    duration,
+    volume=0.18
+){
+
+    const osc =
+    audioCtx.createOscillator();
+
+    const gain =
+    audioCtx.createGain();
+
+    osc.type = "triangle";
+    osc.frequency.value = freq;
+
+    gain.gain.setValueAtTime(
+        0.0001,
+        start
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        volume,
+        start+0.02
+    );
+
+    gain.gain.setValueAtTime(
+        volume,
+        start+duration-0.05
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        start+duration
+    );
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(start);
+    osc.stop(start+duration);
+}
+
+function buildMelody(){
+
+    const root =
+    randomChoice([
+        60,62,64,65,67
+    ]);
+
+    const melody =
+    [root];
+
+    for(let i=1;i<6;i++){
+
+        let step =
+        randomChoice([
+            -2,-1,1,2
+        ]);
+
+        let next =
+        melody[i-1] + step;
+
+        next =
+        Math.max(
+            55,
+            Math.min(
+                79,
+                next
+            )
+        );
+
+        melody.push(next);
+    }
+
+    return melody;
+}
+
+function buildRhythm(){
+
+    return clone(
+        randomChoice([
+
+            [1,1,1,1,1,1],
+
+            [1,0.5,0.5,1,1,1],
+
+            [1,1,1,0.5,0.5,1],
+
+            [0.5,0.5,1,1,1,1]
+
+        ])
+    );
+}
+
+function alterPitch(melody){
+
+    const index =
+    Math.floor(
+        melody.length/2 +
+        Math.random()*
+        (melody.length/2)
+    );
+
+    melody[index] +=
+    randomChoice([
+        -2,
+        2
+    ]);
+}
+
+function alterRhythm(rhythm){
+
+    const patterns = [
+
+        [1,1,1,1,1,1],
+
+        [1,0.5,0.5,1,1,1],
+
+        [1,1,1,0.5,0.5,1],
+
+        [0.5,0.5,1,1,1,1]
+
+    ];
+
+    let replacement;
+
+    do{
+
+        replacement =
+        clone(
+            randomChoice(
+                patterns
+            )
+        );
+
+    }while(
+        JSON.stringify(
+            replacement
+        ) ===
+        JSON.stringify(
+            rhythm
+        )
+    );
+
+    return replacement;
+}
+
+function playPhrase(
+    melody,
+    rhythm,
+    startTime
+){
+
+    let t =
+    startTime;
+
+    for(let i=0;
+        i<melody.length;
+        i++){
+
+        playTone(
+            midiToFreq(
+                melody[i]
+            ),
+            t,
+            rhythm[i]*0.35
+        );
+
+        t +=
+        rhythm[i]*0.4;
+    }
+
+    return t;
+}
+
+function playPair(
+    melody1,
+    rhythm1,
+    melody2,
+    rhythm2
+){
+
+    const start =
+    audioCtx.currentTime + 0.3;
+
+    const end1 =
+    playPhrase(
+        melody1,
+        rhythm1,
+        start
+    );
+
+    playPhrase(
+        melody2,
+        rhythm2,
+        end1 + 0.8
+    );
+}
+
+async function newExercise(){
+
+    await audioCtx.resume();
+
+    document
+    .getElementById(
+        "feedback"
+    )
+    .textContent = "";
+
+    const categories = [
+        "same",
+        "pitch",
+        "rhythm",
+        "both"
+    ];
+
+    answer =
+    randomChoice(
+        categories
+    );
+
+    let melody1 =
+    buildMelody();
+
+    let melody2 =
+    clone(
+        melody1
+    );
+
+    let rhythm1 =
+    buildRhythm();
+
+    let rhythm2 =
+    clone(
+        rhythm1
+    );
+
+    switch(answer){
+
+        case "pitch":
+
+            alterPitch(
+                melody2
+            );
+
+            break;
+
+        case "rhythm":
+
+            rhythm2 =
+            alterRhythm(
+                rhythm1
+            );
+
+            break;
+
+        case "both":
+
+            alterPitch(
+                melody2
+            );
+
+            rhythm2 =
+            alterRhythm(
+                rhythm1
+            );
+
+            break;
+    }
+
+    playPair(
+        melody1,
+        rhythm1,
+        melody2,
+        rhythm2
+    );
+}
+
+function checkAnswer(
+    response
+){
+
+    if(answer === null){
+
+        document
+        .getElementById(
+            "feedback"
+        )
+        .textContent =
+        "Play an exercise first.";
+
+        return;
+    }
+
+    total++;
+
+    categoryStats[
+        answer
+    ].total++;
+
+    const isCorrect =
+    response === answer;
+
+    if(isCorrect){
+
+        correct++;
+
+        categoryStats[
+            answer
+        ].correct++;
+
+        document
+        .getElementById(
+            "feedback"
+        )
+        .textContent =
+        "✓ Correct!";
+
+        document
+        .getElementById(
+            "feedback"
+        )
+        .style.color =
+        "green";
+    }
+
+    else{
+
+        document
+        .getElementById(
+            "feedback"
+        )
+        .textContent =
+        "✗ Incorrect. Correct answer: " +
+        answer;
+
+        document
+        .getElementById(
+            "feedback"
+        )
+        .style.color =
+        "crimson";
+    }
+
+    updateStats();
+
+    answer = null;
+}
+
+function updateStats(){
+
+    document
+    .getElementById(
+        "correct"
+    )
+    .textContent =
+    correct;
+
+    document
+    .getElementById(
+        "total"
+    )
+    .textContent =
+    total;
+
+    document
+    .getElementById(
+        "sameStats"
+    )
+    .textContent =
+    categoryStats.same.correct +
+    "/" +
+    categoryStats.same.total;
+
+    document
+    .getElementById(
+        "pitchStats"
+    )
+    .textContent =
+    categoryStats.pitch.correct +
+    "/" +
+    categoryStats.pitch.total;
+
+    document
+    .getElementById(
+        "rhythmStats"
+    )
+    .textContent =
+    categoryStats.rhythm.correct +
+    "/" +
+    categoryStats.rhythm.total;
+
+    document
+    .getElementById(
+        "bothStats"
+    )
+    .textContent =
+    categoryStats.both.correct +
+    "/" +
+    categoryStats.both.total;
+}
+
+document
+.getElementById(
+    "playBtn"
+)
+.addEventListener(
+    "click",
+    newExercise
+);
+
+document
+.querySelectorAll(
+    "[data-answer]"
+)
+.forEach(btn=>{
+
+    btn.addEventListener(
+        "click",
+        ()=>{
+
+            checkAnswer(
+                btn.dataset.answer
+            );
+
+        }
+    );
+});
+
+</script>
+
+</body>
+</html>

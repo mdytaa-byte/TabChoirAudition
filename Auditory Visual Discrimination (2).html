@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auditory-Visual Discrimination</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    max-width: 1000px;
+    margin: 20px auto;
+    text-align: center;
+    background: #f5f7fa;
+}
+
+h1 {
+    color: #2c3e50;
+}
+
+canvas {
+    border: 1px solid #ccc;
+    background: white;
+    margin: 20px 0;
+}
+
+button {
+    padding: 10px 18px;
+    margin: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.measure-btn.selected {
+    background: #4caf50;
+    color: white;
+}
+
+#mode {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 15px;
+}
+
+#feedback {
+    min-height: 40px;
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-top: 15px;
+}
+</style>
+</head>
+<body>
+
+<h1>Auditory-Visual Discrimination</h1>
+
+<div id="mode">Press New Exercise</div>
+
+<canvas id="music" width="900" height="220"></canvas>
+
+<div>
+    <button id="newBtn">New Exercise</button>
+    <button id="replayBtn">Replay Audio</button>
+</div>
+
+<div>
+    <button class="measure-btn" data-measure="1">Measure 1</button>
+    <button class="measure-btn" data-measure="2">Measure 2</button>
+    <button class="measure-btn" data-measure="3">Measure 3</button>
+    <button class="measure-btn" data-measure="4">Measure 4</button>
+</div>
+
+<div>
+    <button id="submitBtn">Submit Answer</button>
+</div>
+
+<div id="feedback"></div>
+
+<div style="margin-top:20px;">
+    Correct: <span id="correct">0</span> |
+    Total: <span id="total">0</span>
+</div>
+
+<script>
+
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+let exerciseMode;
+let notationMeasures = [];
+let playbackMeasures = [];
+let alteredMeasures = [];
+
+let total = 0;
+let correct = 0;
+
+const canvas = document.getElementById("music");
+const ctx = canvas.getContext("2d");
+
+const selectedMeasures = new Set();
+
+const availablePitches = [
+    60,62,64,65,67,69,71,72,74,76,77
+];
+
+const noteY = {
+    60:140,
+    62:130,
+    64:120,
+    65:115,
+    67:110,
+    69:105,
+    71:100,
+    72:95,
+    74:90,
+    76:85,
+    77:80
+};
+
+function midiToFreq(midi){
+    return 440 * Math.pow(2,(midi-69)/12);
+}
+
+function randomChoice(arr){
+    return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function shuffle(array){
+    for(let i=array.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [array[i],array[j]]=[array[j],array[i]];
+    }
+}
+
+function playTone(freq,start,duration,volume=0.15){
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = "triangle";
+    osc.frequency.value = freq;
+
+    gain.gain.setValueAtTime(0.0001,start);
+    gain.gain.exponentialRampToValueAtTime(volume,start+0.02);
+    gain.gain.setValueAtTime(volume,start+duration-0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001,start+duration);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(start);
+    osc.stop(start+duration);
+}
+
+function drawStaff(){
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    for(let i=0;i<5;i++){
+        const y = 80 + i*10;
+
+        ctx.beginPath();
+        ctx.moveTo(40,y);
+        ctx.lineTo(860,y);
+        ctx.stroke();
+    }
+
+    ctx.font = "50px serif";
+    ctx.fillText("𝄞",50,122);
+
+    [220,400,580,760].forEach(x=>{
+        ctx.beginPath();
+        ctx.moveTo(x,75);
+        ctx.lineTo(x,125);
+        ctx.stroke();
+    });
+
+    ctx.beginPath();
+    ctx.moveTo(860,75);
+    ctx.lineTo(860,125);
+    ctx.stroke();
+}
+
+function drawMeasure(measure,index){
+
+    const startX = 95 + index*180;
+
+    measure.forEach((note,i)=>{
+
+        const x = startX + i*35;
+        const y = noteY[note.pitch];
+
+        ctx.beginPath();
+        ctx.ellipse(x,y,8,6,-0.4,0,Math.PI*2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(x+8,y);
+        ctx.lineTo(x+8,y-30);
+        ctx.stroke();
+
+        if(note.duration === 0.5 &&
+           i < measure.length-1 &&
+           measure[i+1].duration === 0.5){
+
+            ctx.beginPath();
+            ctx.moveTo(x+8,y-30);
+            ctx.lineTo(x+43,noteY[measure[i+1].pitch]-30);
+            ctx.stroke();
+        }
+
+        if(note.pitch === 60){
+            ctx.beginPath();
+            ctx.moveTo(x-12,140);
+            ctx.lineTo(x+12,140);
+            ctx.stroke();
+        }
+    });
+}
+
+function generateMeasure(){
+
+    const patterns = [
+        [1,1,1,1],
+        [0.5,0.5,1,1,1],
+        [1,1,0.5,0.5,1],
+        [1,0.5,0.5,1,1]
+    ];
+
+    const rhythm = randomChoice(patterns);
+
+    return rhythm.map(d => ({
+        pitch: randomChoice(availablePitches),
+        duration: d
+    }));
+}
+
+function createExercise(){
+
+    notationMeasures = [];
+    playbackMeasures = [];
+    alteredMeasures = [];
+
+    exerciseMode =
+        Math.random() < 0.5 ?
+        "Pitch" :
+        "Rhythm";
+
+    document.getElementById("mode").textContent =
+        exerciseMode + " Discrimination";
+
+    for(let i=0;i<4;i++){
+
+        const m = generateMeasure();
+
+        notationMeasures.push(
+            JSON.parse(JSON.stringify(m))
+        );
+
+        playbackMeasures.push(
+            JSON.parse(JSON.stringify(m))
+        );
+    }
+
+    const count =
+        Math.random()<0.5 ? 1 : 2;
+
+    const order = [0,1,2,3];
+    shuffle(order);
+
+    for(let i=0;i<count;i++){
+
+        const measureIndex = order[i];
+
+        alteredMeasures.push(measureIndex+1);
+
+        if(exerciseMode==="Pitch"){
+
+            const noteIndex =
+                Math.floor(
+                    Math.random() *
+                    playbackMeasures[measureIndex].length
+                );
+
+            let newPitch =
+                randomChoice(
+                    availablePitches
+                );
+
+            playbackMeasures[measureIndex][noteIndex].pitch =
+                newPitch;
+        }
+        else{
+
+            if(playbackMeasures[measureIndex].length >= 2){
+
+                playbackMeasures[measureIndex][0].duration =
+                    0.5;
+
+                playbackMeasures[measureIndex][1].duration =
+                    0.5;
+            }
+        }
+    }
+
+    drawStaff();
+
+    notationMeasures.forEach(
+        (m,i)=>drawMeasure(m,i)
+    );
+
+    playExercise();
+}
+
+async function playExercise(){
+
+    await audioCtx.resume();
+
+    let t = audioCtx.currentTime + 0.25;
+
+    playbackMeasures.forEach(measure=>{
+
+        measure.forEach(note=>{
+
+            playTone(
+                midiToFreq(note.pitch),
+                t,
+                note.duration*0.4
+            );
+
+            t += note.duration*0.45;
+        });
+
+        t += 0.15;
+    });
+}
+
+function checkAnswer(){
+
+    total++;
+
+    const chosen =
+        [...selectedMeasures].sort();
+
+    const answer =
+        [...alteredMeasures].sort();
+
+    const success =
+        JSON.stringify(chosen) ===
+        JSON.stringify(answer);
+
+    const feedback =
+        document.getElementById("feedback");
+
+    if(success){
+
+        correct++;
+
+        feedback.textContent =
+            "✓ Correct!";
+
+        feedback.style.color =
+            "green";
+    }
+    else{
+
+        feedback.textContent =
+            "✗ Incorrect. Altered measures: " +
+            answer.join(", ");
+
+        feedback.style.color =
+            "crimson";
+    }
+
+    document.getElementById("correct").textContent =
+        correct;
+
+    document.getElementById("total").textContent =
+        total;
+}
+
+document.querySelectorAll(".measure-btn")
+.forEach(btn=>{
+
+    btn.addEventListener("click",()=>{
+
+        const m =
+            parseInt(btn.dataset.measure);
+
+        if(selectedMeasures.has(m)){
+
+            selectedMeasures.delete(m);
+            btn.classList.remove("selected");
+        }
+        else{
+
+            selectedMeasures.add(m);
+            btn.classList.add("selected");
+        }
+    });
+});
+
+document.getElementById("submitBtn")
+.addEventListener("click",checkAnswer);
+
+document.getElementById("newBtn")
+.addEventListener("click",()=>{
+
+    selectedMeasures.clear();
+
+    document.querySelectorAll(".measure-btn")
+    .forEach(btn=>btn.classList.remove("selected"));
+
+    document.getElementById("feedback").textContent = "";
+
+    createExercise();
+});
+
+document.getElementById("replayBtn")
+.addEventListener("click",playExercise);
+
+drawStaff();
+
+</script>
+
+</body>
+</html>
