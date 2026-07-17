@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Longing: War of Aspects — Card Battler</title>
+<style>
+  :root {
+    --bg:#070912;
+    --panel:#121526;
+    --panel2:#1b1d32;
+    --ink:#f7f0db;
+    --muted:#b7b1a3;
+    --gold:#e6bd62;
+    --gold2:#8f672e;
+    --danger:#ef6262;
+    --good:#6ed79a;
+    --blue:#75b8ff;
+    --shadow:0 24px 70px rgba(0,0,0,.48);
+    --radius:22px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  body{
+    background:
+      radial-gradient(circle at 12% 8%,rgba(98,83,191,.23),transparent 27%),
+      radial-gradient(circle at 88% 12%,rgba(218,146,61,.14),transparent 25%),
+      radial-gradient(circle at 52% 92%,rgba(30,122,129,.15),transparent 30%),
+      linear-gradient(160deg,#060812 0%,#0a0d19 55%,#070911 100%);
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;opacity:.22;
+    background-image:
+      linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(circle at center,black,transparent 82%);
+  }
+  button,select,input{font:inherit}
+  button{color:inherit}
+  .hidden{display:none!important}
+  .app{width:min(1540px,100%);margin:auto;padding:18px}
+  .ornament{color:var(--gold);letter-spacing:.34em;font-size:.76rem;text-transform:uppercase;font-weight:900}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:18px;
+    padding:12px 16px;border:1px solid rgba(230,189,98,.35);border-radius:18px;
+    background:linear-gradient(135deg,rgba(24,27,45,.96),rgba(10,12,24,.94));
+    box-shadow:var(--shadow);position:sticky;top:10px;z-index:40;backdrop-filter:blur(12px)
+  }
+  .brand{display:flex;gap:12px;align-items:center;min-width:0}
+  .sigil{width:46px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;border:2px solid var(--gold);background:radial-gradient(circle,#f4d98f 0 10%,#48351e 11% 28%,#111524 29%);box-shadow:0 0 24px rgba(230,189,98,.24);font-size:21px}
+  .brand h1{margin:0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(1.05rem,2.3vw,1.75rem);letter-spacing:.035em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand p{margin:2px 0 0;color:var(--muted);font-size:.78rem}
+  .top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .btn{
+    border:1px solid rgba(230,189,98,.45);border-radius:12px;padding:9px 13px;
+    background:linear-gradient(180deg,#282b42,#171a2b);font-weight:850;cursor:pointer;
+    box-shadow:0 6px 16px rgba(0,0,0,.22);transition:.16s transform,.16s filter,.16s border-color
+  }
+  .btn:hover{transform:translateY(-1px);filter:brightness(1.12);border-color:var(--gold)}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:linear-gradient(180deg,#e8c46f,#9f6f2d);color:#1c1308;border-color:#ffe091;text-shadow:0 1px rgba(255,255,255,.28)}
+  .btn.danger{background:linear-gradient(180deg,#8c3440,#4a1c28)}
+  .btn.good{background:linear-gradient(180deg,#367b5a,#194830)}
+  .btn[disabled]{opacity:.38;cursor:not-allowed;transform:none;filter:none}
+
+  /* SETUP */
+  .setup{padding:34px 0 60px}
+  .hero{text-align:center;max-width:960px;margin:24px auto 30px}
+  .hero .kicker{color:var(--gold);font-weight:900;letter-spacing:.36em;text-transform:uppercase;font-size:.78rem}
+  .hero h2{font-family:Georgia,"Times New Roman",serif;font-size:clamp(2.6rem,7vw,6rem);line-height:.92;margin:13px 0 14px;text-shadow:0 8px 34px rgba(0,0,0,.6)}
+  .hero h2 span{display:block;color:var(--gold);font-size:.46em;letter-spacing:.15em;margin-top:12px}
+  .hero p{color:#d0c9b8;max-width:770px;margin:auto;font-size:clamp(.98rem,1.6vw,1.14rem);line-height:1.65}
+  .setup-grid{display:grid;grid-template-columns:360px 1fr;gap:18px;align-items:start}
+  .setup-panel,.faction-panel{
+    border:1px solid rgba(230,189,98,.26);border-radius:var(--radius);background:linear-gradient(160deg,rgba(24,27,45,.95),rgba(11,13,25,.96));box-shadow:var(--shadow)
+  }
+  .setup-panel{padding:20px;position:sticky;top:92px}
+  .setup-panel h3,.faction-panel h3{font-family:Georgia,"Times New Roman",serif;margin:0 0 14px;font-size:1.45rem}
+  .mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+  .mode-tab{padding:12px 8px;border-radius:13px;border:1px solid rgba(255,255,255,.12);background:#111425;cursor:pointer;font-weight:850}
+  .mode-tab.active,.assign-tab.active{border-color:var(--gold);background:linear-gradient(180deg,#5b4728,#282014);color:#ffe8b0}
+  .assign-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 16px}
+  .assign-tab{padding:9px 7px;border-radius:11px;border:1px solid rgba(255,255,255,.12);background:#111425;cursor:pointer;font-weight:850;font-size:.78rem}
+  .form-row{display:grid;gap:7px;margin:13px 0}
+  .form-row label{color:var(--muted);font-size:.78rem;font-weight:850;text-transform:uppercase;letter-spacing:.08em}
+  select,input{border:1px solid rgba(230,189,98,.32);border-radius:11px;background:#090c17;color:var(--ink);padding:11px 12px;outline:none}
+  select:focus,input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(230,189,98,.13)}
+  .selected-decks{display:grid;gap:8px;margin:16px 0}
+  .selected-line{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07)}
+  .selected-line .mini-sigil{width:34px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:var(--faction);border:1px solid rgba(255,255,255,.42);box-shadow:inset 0 0 18px rgba(0,0,0,.45)}
+  .selected-line b{display:block;font-family:Georgia,serif}
+  .selected-line small{color:var(--muted)}
+  .setup-tip{font-size:.82rem;color:var(--muted);line-height:1.45;border-top:1px solid rgba(255,255,255,.08);padding-top:14px;margin-top:14px}
+  .faction-panel{padding:20px}
+  .faction-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .faction-head p{margin:0;color:var(--muted);font-size:.87rem}
+  .faction-grid{display:grid;grid-template-columns:repeat(2,minmax(240px,1fr));gap:13px}
+  .faction-card{
+    position:relative;text-align:left;overflow:hidden;min-height:220px;padding:17px;border-radius:18px;
+    border:1px solid color-mix(in srgb,var(--faction) 72%,white 12%);cursor:pointer;
+    background:
+      radial-gradient(circle at 80% 10%,color-mix(in srgb,var(--faction) 55%,transparent),transparent 34%),
+      linear-gradient(150deg,color-mix(in srgb,var(--faction) 22%,#15182a),#0b0e1a 72%);
+    box-shadow:inset 0 0 46px rgba(0,0,0,.22);transition:.18s transform,.18s box-shadow,.18s border-color
+  }
+  .faction-card:hover{transform:translateY(-3px);box-shadow:0 18px 35px rgba(0,0,0,.32),inset 0 0 46px rgba(0,0,0,.2)}
+  .faction-card.selected-p1{box-shadow:0 0 0 3px #f5d680,0 18px 35px rgba(0,0,0,.32)}
+  .faction-card.selected-p2{box-shadow:0 0 0 3px #83c5ff,0 18px 35px rgba(0,0,0,.32)}
+  .faction-card.selected-both{box-shadow:0 0 0 3px #f5d680,0 0 0 7px #83c5ff,0 18px 35px rgba(0,0,0,.32)}
+  .faction-card .crest{position:absolute;right:14px;top:9px;font-size:72px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.35));opacity:.92}
+  .faction-card h4{font-family:Georgia,serif;font-size:1.45rem;margin:5px 76px 3px 0}
+  .faction-card .tag{color:color-mix(in srgb,var(--faction) 60%,white);font-weight:900;text-transform:uppercase;letter-spacing:.12em;font-size:.69rem}
+  .faction-card p{color:#d0c9bb;line-height:1.42;font-size:.89rem;max-width:86%;margin:14px 0 12px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{border:1px solid rgba(255,255,255,.13);background:rgba(0,0,0,.24);border-radius:999px;padding:5px 8px;font-size:.68rem;font-weight:850;color:#eee7d7}
+  .select-hint{position:absolute;right:12px;bottom:10px;font-size:.67rem;color:#bdb6a6}
+
+  /* GAME */
+  .game{padding:14px 0 30px}
+  .game-shell{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:14px;align-items:start}
+  .battlefield{
+    min-height:760px;border:1px solid rgba(230,189,98,.25);border-radius:24px;overflow:hidden;position:relative;
+    background:
+      radial-gradient(ellipse at center,rgba(132,104,67,.18),transparent 45%),
+      linear-gradient(180deg,rgba(19,24,45,.95),rgba(13,18,32,.95) 48%,rgba(22,18,24,.96));
+    box-shadow:var(--shadow)
+  }
+  .battlefield::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,transparent 49.8%,rgba(230,189,98,.12) 50%,transparent 50.2%),linear-gradient(0deg,transparent 49.7%,rgba(230,189,98,.13) 50%,transparent 50.3%)}
+  .player-zone{position:relative;z-index:1;padding:12px 14px;display:grid;grid-template-columns:190px 1fr 180px;gap:12px;align-items:center;min-height:150px}
+  .player-zone.enemy{background:linear-gradient(180deg,rgba(0,0,0,.24),transparent)}
+  .player-zone.self{background:linear-gradient(0deg,rgba(0,0,0,.3),transparent)}
+  .commander{
+    position:relative;min-height:118px;border-radius:18px;padding:12px;border:1px solid color-mix(in srgb,var(--faction) 68%,white 10%);
+    background:radial-gradient(circle at 80% 20%,color-mix(in srgb,var(--faction) 35%,transparent),transparent 45%),linear-gradient(145deg,#20243b,#0e111e);
+    box-shadow:inset 0 0 34px rgba(0,0,0,.35);cursor:pointer
+  }
+  .commander.targetable{animation:targetPulse 1s infinite alternate}
+  .commander .hero-icon{font-size:40px;position:absolute;right:10px;top:8px;filter:drop-shadow(0 5px 8px rgba(0,0,0,.4))}
+  .commander .name{font-family:Georgia,serif;font-size:1.05rem;font-weight:900;padding-right:44px}
+  .commander .faction-name{font-size:.65rem;text-transform:uppercase;letter-spacing:.11em;color:color-mix(in srgb,var(--faction) 58%,white)}
+  .health-row{display:flex;gap:7px;align-items:center;margin-top:22px}
+  .health-orb,.armor-orb{min-width:48px;height:38px;border-radius:20px;display:flex;align-items:center;justify-content:center;gap:4px;font-size:1.12rem;font-weight:950;border:1px solid rgba(255,255,255,.25);box-shadow:inset 0 0 14px rgba(0,0,0,.3)}
+  .health-orb{background:linear-gradient(180deg,#9d303b,#4b101b)}
+  .armor-orb{background:linear-gradient(180deg,#476d99,#213653)}
+  .resource-box{text-align:center;display:grid;gap:7px}
+  .resource-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.15em;color:var(--muted);font-weight:900}
+  .essence-row{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+  .essence{width:18px;height:25px;clip-path:polygon(50% 0,100% 26%,82% 100%,18% 100%,0 26%);background:#242a3c;border:1px solid rgba(255,255,255,.2);box-shadow:inset 0 0 6px rgba(0,0,0,.45)}
+  .essence.full{background:linear-gradient(180deg,#93dbff,#5d6ee5 58%,#6f42a5);filter:drop-shadow(0 0 6px rgba(117,184,255,.5))}
+  .deck-stats{display:flex;gap:8px;justify-content:center;font-size:.75rem;color:var(--muted)}
+  .deck-stat{padding:5px 7px;border-radius:8px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08)}
+  .relic-slot{min-height:108px;border:1px dashed rgba(230,189,98,.28);border-radius:16px;display:grid;place-items:center;padding:8px;text-align:center;color:var(--muted);font-size:.75rem;background:rgba(0,0,0,.16)}
+  .relic-slot.filled{border-style:solid;border-color:rgba(230,189,98,.48);background:radial-gradient(circle at top,rgba(230,189,98,.16),rgba(0,0,0,.2))}
+  .relic-icon{font-size:27px}.relic-name{font-family:Georgia,serif;color:var(--ink);font-weight:900;margin-top:4px}.relic-text{line-height:1.25;font-size:.67rem}
+  .board-area{position:relative;z-index:2;min-height:198px;padding:8px 12px;display:flex;gap:9px;justify-content:center;align-items:center;border-top:1px solid rgba(230,189,98,.08);border-bottom:1px solid rgba(230,189,98,.08)}
+  .board-area.enemy{align-items:flex-end}
+  .board-area.self{align-items:flex-start}
+  .board-empty{color:rgba(255,255,255,.2);font-family:Georgia,serif;font-style:italic;text-align:center}
+  .turn-ribbon{height:50px;position:relative;z-index:3;display:flex;align-items:center;justify-content:center;gap:12px;background:linear-gradient(90deg,transparent,rgba(230,189,98,.12),transparent)}
+  .turn-ribbon::before,.turn-ribbon::after{content:"◆";color:var(--gold);opacity:.7}
+  .turn-ribbon b{font-family:Georgia,serif;letter-spacing:.07em}
+  .hand-wrap{position:relative;z-index:2;padding:11px 12px 16px;border-top:1px solid rgba(230,189,98,.15);background:rgba(0,0,0,.19)}
+  .hand-label{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:.74rem;text-transform:uppercase;letter-spacing:.11em;font-weight:900;margin-bottom:8px}
+  .hand{display:flex;gap:9px;overflow-x:auto;padding:5px 3px 12px;min-height:250px;align-items:flex-end;scrollbar-color:#665331 #121522}
+
+  /* CARDS */
+  .card{
+    --accent:#9a7ef0;position:relative;flex:0 0 164px;height:234px;border:1px solid color-mix(in srgb,var(--accent) 68%,#e7d8a8);border-radius:16px;padding:0;
+    background:linear-gradient(160deg,#25273a,#111522 70%);box-shadow:0 10px 26px rgba(0,0,0,.4),inset 0 0 0 3px rgba(230,189,98,.07);overflow:hidden;text-align:left;cursor:pointer;transition:.16s transform,.16s filter,.16s box-shadow
+  }
+  .card:hover{transform:translateY(-8px);filter:brightness(1.08);box-shadow:0 17px 32px rgba(0,0,0,.5),0 0 0 2px color-mix(in srgb,var(--accent) 65%,transparent)}
+  .card.unplayable{filter:grayscale(.66) brightness(.62);cursor:not-allowed}.card.unplayable:hover{transform:none;box-shadow:0 10px 26px rgba(0,0,0,.4)}
+  .card.selected{transform:translateY(-12px);box-shadow:0 18px 38px rgba(0,0,0,.5),0 0 0 3px #f9db7b}
+  .card.targetable{animation:targetPulse 1s infinite alternate}
+  .card-art{height:82px;display:grid;place-items:center;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 34%,color-mix(in srgb,var(--accent) 66%,white 8%),color-mix(in srgb,var(--accent) 20%,#111522) 48%,#080b14 100%);border-bottom:1px solid rgba(230,189,98,.4)}
+  .card-art::before{content:"";position:absolute;inset:0;background:repeating-conic-gradient(from 0deg at 50% 130%,transparent 0 12deg,rgba(255,255,255,.08) 13deg 14deg);opacity:.55}
+  .card-glyph{position:relative;font-size:48px;filter:drop-shadow(0 7px 7px rgba(0,0,0,.55));transform:translateY(2px)}
+  .cost{position:absolute;top:7px;left:7px;z-index:3;width:34px;height:38px;clip-path:polygon(50% 0,100% 25%,82% 100%,18% 100%,0 25%);display:grid;place-items:center;background:linear-gradient(180deg,#9bdfff,#5965dd 62%,#6f3e9f);font-weight:950;font-size:1.08rem;text-shadow:0 2px 3px rgba(0,0,0,.5);filter:drop-shadow(0 3px 5px rgba(0,0,0,.5))}
+  .rarity{position:absolute;right:7px;top:7px;z-index:3;width:15px;height:15px;transform:rotate(45deg);background:var(--rarity,#b8b1a4);border:1px solid rgba(255,255,255,.6);box-shadow:0 0 10px var(--rarity,#b8b1a4)}
+  .card-body{padding:7px 9px 8px}
+  .card-name{font-family:Georgia,serif;font-size:.91rem;font-weight:900;line-height:1.05;min-height:30px;text-align:center;color:#fff5d8}
+  .card-type{text-align:center;color:color-mix(in srgb,var(--accent) 54%,white);font-size:.59rem;text-transform:uppercase;letter-spacing:.12em;font-weight:900;margin:3px 0 5px}
+  .card-text{font-family:Georgia,serif;font-size:.69rem;line-height:1.25;color:#d8d0c0;height:58px;overflow:hidden;text-align:center;display:grid;place-items:center}
+  .stats{position:absolute;bottom:7px;left:7px;right:7px;display:flex;justify-content:space-between;align-items:center}
+  .stat{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:950;border:1px solid rgba(255,255,255,.3);text-shadow:0 2px 3px #000}
+  .atk{background:linear-gradient(180deg,#c98540,#6b351e)}
+  .hp{background:linear-gradient(180deg,#a13d48,#521622)}
+  .keyword-row{display:flex;gap:3px;justify-content:center;flex-wrap:wrap;max-width:80px}
+  .keyword{font-size:.53rem;background:rgba(0,0,0,.34);border:1px solid rgba(255,255,255,.13);border-radius:999px;padding:2px 4px;color:#eee6d4;font-weight:850}
+  .board-card{flex-basis:148px;height:211px}
+  .board-card .card-art{height:68px}.board-card .card-text{height:48px;font-size:.64rem}.board-card .card-name{font-size:.83rem}.board-card .card-type{font-size:.54rem}
+  .board-card.exhausted{filter:brightness(.58) saturate(.65)}
+  .board-card.exhausted::after{content:"RESTING";position:absolute;inset:auto 0 39px;background:rgba(0,0,0,.7);text-align:center;font-size:.58rem;letter-spacing:.14em;padding:4px;font-weight:900}
+  .board-card.stunned::after{content:"STUNNED";position:absolute;inset:auto 0 39px;background:rgba(75,124,196,.82);text-align:center;font-size:.58rem;letter-spacing:.14em;padding:4px;font-weight:900}
+  .ward-mark{position:absolute;inset:4px;border:2px solid #a9e8ff;border-radius:14px;pointer-events:none;box-shadow:inset 0 0 18px rgba(110,206,255,.22),0 0 10px rgba(110,206,255,.2)}
+  .rebirth-mark{position:absolute;right:8px;bottom:43px;font-size:17px;filter:drop-shadow(0 0 5px #e9cb62)}
+  @keyframes targetPulse{from{box-shadow:0 0 0 2px rgba(245,214,128,.45),0 10px 25px rgba(0,0,0,.4)}to{box-shadow:0 0 0 5px rgba(245,214,128,.85),0 10px 35px rgba(230,189,98,.26)}}
+  @keyframes hitFlash{0%{filter:brightness(1)}40%{filter:brightness(2.4) saturate(1.8)}100%{filter:brightness(1)}}
+  .hit{animation:hitFlash .35s}
+
+  /* SIDE PANEL */
+  .side-panel{display:grid;gap:12px;position:sticky;top:92px}
+  .side-card{border:1px solid rgba(230,189,98,.23);border-radius:18px;background:linear-gradient(160deg,rgba(24,27,45,.96),rgba(10,12,23,.96));box-shadow:var(--shadow);overflow:hidden}
+  .side-card h3{font-family:Georgia,serif;margin:0;padding:13px 15px;border-bottom:1px solid rgba(230,189,98,.16);font-size:1.05rem}
+  .turn-controls{padding:13px;display:grid;gap:9px}
+  .active-note{text-align:center;color:var(--muted);font-size:.79rem;line-height:1.35}
+  .log{height:258px;overflow:auto;padding:10px 12px;display:grid;align-content:start;gap:8px}
+  .log-entry{border-left:3px solid var(--log,#776ba7);padding:5px 7px;background:rgba(255,255,255,.035);font-size:.73rem;line-height:1.35;color:#d5cebe;border-radius:0 7px 7px 0}
+  .log-entry b{color:#fff1c7}
+  .rules-mini{padding:12px 14px;color:#c8c0b0;font-size:.76rem;line-height:1.45}
+  .rules-mini b{color:#fff0c1}
+
+  /* OVERLAYS */
+  .overlay{position:fixed;inset:0;z-index:100;background:rgba(3,5,12,.86);backdrop-filter:blur(10px);display:grid;place-items:center;padding:18px}
+  .modal{width:min(760px,96vw);max-height:90vh;overflow:auto;border:1px solid rgba(230,189,98,.48);border-radius:24px;background:linear-gradient(155deg,#22263c,#0b0e19 75%);box-shadow:0 30px 100px rgba(0,0,0,.7);padding:24px}
+  .modal h2{font-family:Georgia,serif;font-size:clamp(1.8rem,4vw,3rem);margin:0 0 10px}.modal p{color:#cec6b6;line-height:1.55}.modal-actions{display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+  .rules-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.rule{padding:11px;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);font-size:.82rem;line-height:1.42}.rule b{display:block;color:#ffe4a0;margin-bottom:4px}
+  .pass-card{text-align:center;max-width:560px}.pass-icon{font-size:76px}.pass-card h2{margin:7px 0}.pass-card p{max-width:430px;margin:0 auto;color:#c9c1b2}
+  .end-card{text-align:center}.end-icon{font-size:78px}.end-stats{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:16px 0}.end-stat{padding:10px 13px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.2);border-radius:12px}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);z-index:120;opacity:0;pointer-events:none;background:#171b2c;border:1px solid rgba(230,189,98,.5);border-radius:12px;padding:10px 16px;box-shadow:var(--shadow);font-weight:850;transition:.22s;max-width:min(90vw,650px);text-align:center}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .floating-number{position:fixed;z-index:130;font-size:1.8rem;font-weight:950;pointer-events:none;text-shadow:0 3px 8px #000;animation:floatNum .8s ease-out forwards}
+  @keyframes floatNum{0%{transform:translate(-50%,0) scale(.7);opacity:0}20%{opacity:1;transform:translate(-50%,-10px) scale(1.15)}100%{opacity:0;transform:translate(-50%,-70px) scale(.9)}}
+  .spark{position:fixed;width:8px;height:8px;border-radius:50%;z-index:125;pointer-events:none;background:var(--spark,#f8d27a);box-shadow:0 0 8px var(--spark,#f8d27a);animation:sparkOut .7s ease-out forwards}
+  @keyframes sparkOut{to{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+  .cpu-thinking{display:inline-flex;gap:5px;align-items:center}.cpu-thinking span{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:dot 1s infinite}.cpu-thinking span:nth-child(2){animation-delay:.15s}.cpu-thinking span:nth-child(3){animation-delay:.3s}@keyframes dot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
+
+  @media(max-width:1120px){
+    .setup-grid{grid-template-columns:1fr}.setup-panel{position:static}.game-shell{grid-template-columns:1fr}.side-panel{position:static;grid-template-columns:1fr 1fr}.side-card:last-child{grid-column:1/-1}
+    .battlefield{min-height:auto}
+  }
+  @media(max-width:760px){
+    .app{padding:9px}.topbar{top:5px}.brand p{display:none}.sigil{width:38px}.top-actions .btn{padding:8px 9px;font-size:.78rem}
+    .faction-grid{grid-template-columns:1fr}.player-zone{grid-template-columns:1fr 1fr;gap:8px}.player-zone .resource-box{grid-column:1/-1;grid-row:2}.relic-slot{min-height:88px}.commander{min-height:100px}
+    .board-area{justify-content:flex-start;overflow-x:auto;min-height:188px}.card{flex-basis:150px;height:222px}.board-card{flex-basis:135px;height:200px}.hand{min-height:235px}.side-panel{grid-template-columns:1fr}.side-card:last-child{grid-column:auto}.rules-grid{grid-template-columns:1fr}
+  }
+  @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="sigil">△</div>
+      <div><h1>The Longing: War of Aspects</h1><p>A Penultimate Dawn card battler</p></div>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="rulesBtn">Rules</button>
+      <button class="btn" id="soundBtn" aria-pressed="true">Sound: On</button>
+      <button class="btn danger hidden" id="quitBtn">Leave Battle</button>
+    </div>
+  </header>
+
+  <main id="setupScreen" class="setup">
+    <section class="hero">
+      <div class="kicker">Six Aspects · Four Factions · One Realm</div>
+      <h2>War of Aspects <span>A card battler from The Longing</span></h2>
+      <p>Command vessels, mages, living-glass constructs, ancient beasts, and relics of a fallen realm. Build momentum with Essence, defend your commander, and reduce the opposing commander to zero health.</p>
+    </section>
+
+    <div class="setup-grid">
+      <aside class="setup-panel">
+        <h3>Prepare the Battle</h3>
+        <div class="mode-tabs">
+          <button class="mode-tab active" data-mode="cpu">Against Computer</button>
+          <button class="mode-tab" data-mode="local">Two Players</button>
+        </div>
+        <div class="form-row"><label>Assign the next faction to</label><div class="assign-tabs"><button class="assign-tab active" id="assignP1Btn" data-target="p1">You</button><button class="assign-tab" id="assignP2Btn" data-target="p2">Computer</button></div></div>
+        <div class="form-row"><label for="p1name">First commander</label><input id="p1name" maxlength="22" value="Commander One"></div>
+        <div class="form-row hidden" id="p2nameRow"><label for="p2name">Second commander</label><input id="p2name" maxlength="22" value="Commander Two"></div>
+        <div class="form-row" id="difficultyRow"><label for="difficulty">Computer strategy</label><select id="difficulty"><option value="novice">Novice</option><option value="tactician" selected>Tactician</option><option value="ruthless">Ruthless</option></select></div>
+        <div class="selected-decks" id="selectedDecks"></div>
+        <button class="btn primary" id="startBtn" style="width:100%;padding:13px">Begin the Battle</button>
+        <div class="setup-tip"><b>Choose factions:</b> use the assignment buttons, then click a faction deck. In computer mode, leave the computer faction unassigned to face a random opponent.</div>
+      </aside>
+
+      <section class="faction-panel">
+        <div class="faction-head"><div><h3>Faction Decks</h3><p>Each complete deck contains 24 cards and a distinct battlefield strategy.</p></div><div class="ornament">Choose your allegiance</div></div>
+        <div id="factionGrid" class="faction-grid"></div>
+      </section>
+    </div>
+  </main>
+
+  <main id="gameScreen" class="game hidden">
+    <div class="game-shell">
+      <section class="battlefield" id="battlefield">
+        <div class="player-zone enemy" id="enemyZone"></div>
+        <div class="board-area enemy" id="enemyBoard"></div>
+        <div class="turn-ribbon"><b id="turnText">TURN 1</b></div>
+        <div class="board-area self" id="selfBoard"></div>
+        <div class="player-zone self" id="selfZone"></div>
+        <div class="hand-wrap">
+          <div class="hand-label"><span id="handOwner">Your hand</span><span id="handHint">Play a card or command a ready unit</span></div>
+          <div class="hand" id="hand"></div>
+        </div>
+      </section>
+      <aside class="side-panel">
+        <section class="side-card">
+          <h3>Command</h3>
+          <div class="turn-controls">
+            <div class="active-note" id="activeNote">Spend Essence to deploy cards. Select a ready unit, then choose its target.</div>
+            <button class="btn primary" id="endTurnBtn">End Turn</button>
+            <button class="btn" id="cancelBtn" disabled>Cancel Selection</button>
+          </div>
+        </section>
+        <section class="side-card">
+          <h3>Chronicle</h3>
+          <div class="log" id="log"></div>
+        </section>
+        <section class="side-card">
+          <h3>Battlefield Keywords</h3>
+          <div class="rules-mini"><b>Guard</b> must be attacked first. <b>Swift</b> may attack when summoned. <b>Flight</b> ignores Guard. <b>Ward</b> prevents the first damage. <b>Drain</b> heals your commander when dealing damage. <b>Rebirth</b> returns once with 1 Health. A board holds at most five units.</div>
+        </section>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<div class="overlay hidden" id="rulesOverlay">
+  <div class="modal">
+    <h2>How to Play</h2>
+    <p>Each commander begins with 30 Health and a faction deck. Your maximum Essence rises by one at the start of each turn, up to ten, and refills completely.</p>
+    <div class="rules-grid">
+      <div class="rule"><b>1. Deploy</b>Play units, spells, and one persistent relic by paying their Essence cost.</div>
+      <div class="rule"><b>2. Command</b>Select a ready friendly unit, then an enemy unit or commander. Most newly summoned units must wait one turn.</div>
+      <div class="rule"><b>3. Defend</b>Units strike each other simultaneously. Guard units protect allies and commanders unless the attacker has Flight.</div>
+      <div class="rule"><b>4. Win</b>Reduce the opposing commander to 0 Health. Running out of cards causes escalating fatigue damage.</div>
+      <div class="rule"><b>Local Play</b>A pass screen hides each player’s hand between turns.</div>
+      <div class="rule"><b>Faction Identity</b>Vigilant heal and endure; Sanctuary overwhelm; Mage Bears build packs; the Bone Host corrupts and returns.</div>
+    </div>
+    <div class="modal-actions"><button class="btn primary" id="closeRulesBtn">Return</button></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="passOverlay">
+  <div class="modal pass-card">
+    <div class="pass-icon">✦</div>
+    <div class="ornament">The realm changes hands</div>
+    <h2 id="passTitle">Pass to Player Two</h2>
+    <p>Make sure the next commander is ready before revealing the hand.</p>
+    <div class="modal-actions" style="justify-content:center"><button class="btn primary" id="passBtn">Reveal My Turn</button></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="endOverlay">
+  <div class="modal end-card">
+    <div class="end-icon" id="endIcon">🏆</div>
+    <div class="ornament">The chronicle is written</div>
+    <h2 id="endTitle">Victory</h2>
+    <p id="endText"></p>
+    <div class="end-stats" id="endStats"></div>
+    <div class="modal-actions" style="justify-content:center"><button class="btn primary" id="rematchBtn">Rematch</button><button class="btn" id="newBattleBtn">Choose New Factions</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+
+const FACTIONS = {
+  vigilant: {
+    name:'Vigilant of the Light', short:'Vigilant', color:'#d5b85e', crest:'☀️', commander:'Azil’s Vanguard', hero:'🜂',
+    tag:'Healing · Wards · Preparedness',
+    description:'The Vigilant wait, endure, and answer the darkness with careful preparation. Heal your commander, shield key allies, and win through resilient value.',
+    chips:['Healing','Ward','Card draw','Balanced']
+  },
+  sanctuary: {
+    name:'Sanctuary of Darkness', short:'Sanctuary', color:'#9d4fcb', crest:'🔻', commander:'Kaval’s Chosen', hero:'⚔️',
+    tag:'Pressure · Essence denial · Constructs',
+    description:'Kaval’s Sanctuary attacks without pause. Use elite mages, living-glass warforms, and oppressive spells to seize the initiative before foes can stabilize.',
+    chips:['Aggression','Swift','Stun','Direct damage']
+  },
+  bears: {
+    name:'Mage Bear Conclave', short:'Conclave', color:'#2fa37b', crest:'🐻', commander:'Favored of the Old Blood', hero:'🌿',
+    tag:'Beasts · Pack strength · Ancient rites',
+    description:'The deep-tunnel clans fight as one. Build a board of Mage Creatures, strengthen the entire pack, and overwhelm enemies with ancient strength.',
+    chips:['Beasts','Pack','Guard','Board buffs']
+  },
+  bone: {
+    name:'Host of the Bone King', short:'Bone Host', color:'#66788e', crest:'💀', commander:'Voice of the Last Realm', hero:'👑',
+    tag:'Rebirth · Corruption · Sacrifice',
+    description:'The last king remembers every soul. Trade life for knowledge, return fallen servants, and spread black mist until resistance is sealed in crystal.',
+    chips:['Rebirth','Drain','Board damage','Fatigue']
+  }
+};
+
+const C = (id,name,faction,type,cost,attack,health,glyph,text,rarity='common',keywords=[],effect=null,tribe='') => ({id,name,faction,type,cost,attack,health,glyph,text,rarity,keywords,effect,tribe});
+const CARDS = {
+  // Vigilant
+  vigilant_watcher:C('vigilant_watcher','Vigilant Watcher','vigilant','unit',1,1,3,'🕯️','Guard. Prepared to stand between danger and the faithful.','common',['guard'],null,'Human'),
+  remainder_scout:C('remainder_scout','Remainder Scout','vigilant','unit',2,2,2,'🏹','Swift. The hidden paths are already mapped.','common',['swift'],null,'Human'),
+  peter_hope:C('peter_hope','Peter, Hope of the Remainder','vigilant','unit',2,2,3,'🌟','Whenever your commander is healed, gain +1 Attack.','rare',[],'heal_grow','Human'),
+  mage_fowl_messenger:C('mage_fowl_messenger','Mage Fowl Messenger','vigilant','unit',2,1,3,'🦅','Flight. On play: draw a card.','common',['flight'],'draw1','Beast'),
+  carnon:C('carnon','Carnon, Captain of the Vigilant','vigilant','unit',3,2,5,'🛡️','Guard. On play: give your other units +1 Health.','rare',['guard'],'buff_others_health','Human'),
+  jamith_scholar:C('jamith_scholar','Jamith, Faithful Scholar','vigilant','unit',4,3,5,'📜','On defeat: add Hidden Bell to your hand.','epic',[],'death_hidden_bell','Human'),
+  cherbur:C('cherbur','Cherbur, Remainder Commander','vigilant','unit',4,3,4,'🗺️','On play: summon a Remainder Scout.','rare',[],'summon_scout','Human'),
+  sarhah:C('sarhah','Sarhah, Favored of Semprel','vigilant','unit',5,4,6,'🧡','Ward. On play: heal your commander for 4.','legendary',['ward'],'heal4','Human'),
+  evelet:C('evelet','Evelet, Aspectbound','vigilant','unit',5,4,6,'💠','Ward. When your turn begins, heal your commander for 1.','epic',['ward'],'turn_heal1','Human'),
+  azil:C('azil','Azil, Returned Vessel','vigilant','unit',7,6,7,'☀️','Ward. On play: give all allies +1/+1 and heal your commander for 3.','legendary',['ward'],'azil_rally','Vessel'),
+  dawn_potation:C('dawn_potation','Dawn Potation','vigilant','spell',2,0,0,'🧪','Heal your commander for 5.','common',[],'heal5'),
+  days_flight:C('days_flight','The Days of Flight','vigilant','spell',3,0,0,'📖','Draw 2 cards. Give a random friendly unit Ward.','rare',[],'draw2_ward'),
+  semprel_blessing:C('semprel_blessing','Semprel’s Blessing','vigilant','spell',4,0,0,'✨','Heal your commander for 6 and give a friendly unit +0/+3.','epic',[],'blessing'),
+  hidden_bell:C('hidden_bell','The Hidden Bell','vigilant','spell',6,0,0,'🔔','Deal 3 damage to all enemy units. Draw a card.','legendary',[],'hidden_bell'),
+  communication_amulet:C('communication_amulet','Communication Amulet','vigilant','relic',3,0,0,'📿','At the start of every third turn, draw an extra card.','rare',[],'relic_amulet'),
+  prismatic_sustenance:C('prismatic_sustenance','Prismatic Sustenance','vigilant','spell',1,0,0,'🔷','Gain 2 temporary Essence this turn.','common',[],'gain_essence2'),
+
+  // Sanctuary
+  zealot:C('zealot','Sanctuary Zealot','sanctuary','unit',1,2,1,'🔥','When your commander takes damage, gain +1 Attack.','common',[],'hurt_grow','Human'),
+  wraith:C('wraith','Smoke Wraith','sanctuary','unit',1,2,1,'👻','Swift. Born from the shadowed corridors.','common',['swift'],null,'Wraith'),
+  orange_mage:C('orange_mage','Tattooed Orange Mage','sanctuary','unit',3,4,2,'🟠','Swift. On play: deal 1 damage to the enemy commander.','common',['swift'],'enemy1','Mage'),
+  emerald_mage:C('emerald_mage','Emerald Wind Mage','sanctuary','unit',3,3,3,'🟢','Flight. On play: deal 1 damage to a random enemy unit.','common',['flight'],'ping_random','Mage'),
+  purple_mage:C('purple_mage','Purple Frost Mage','sanctuary','unit',3,2,4,'🟣','Guard. On play: stun the strongest enemy unit.','rare',['guard'],'stun_strongest','Mage'),
+  glass_raptor:C('glass_raptor','Living-Glass Raptor','sanctuary','unit',4,4,4,'🦅','Flight. On defeat: summon two Mage Mite Swarms.','rare',['flight'],'death_two_mites','Construct'),
+  mage_mites:C('mage_mites','Mage Mite Swarm','sanctuary','unit',2,1,4,'✨','On play: give a friendly Construct +1/+1.','common',[],'buff_construct','Beast'),
+  wraith_queen:C('wraith_queen','The Wraith Queen','sanctuary','unit',5,5,4,'👸','Swift. Whenever this defeats a unit, summon a Smoke Wraith.','legendary',['swift'],'kill_summon_wraith','Wraith'),
+  sarchat:C('sarchat','Sarchat, Warden of Orange','sanctuary','unit',6,5,7,'🟧','Guard. On play: stun all damaged enemy units.','legendary',['guard'],'stun_damaged','Human'),
+  mage_gigas:C('mage_gigas','Mage Gigas','sanctuary','unit',8,8,8,'🗿','On play: deal 2 damage to all other units.','epic',[],'gigas_quake','Titan'),
+  kaval:C('kaval','Kaval, Dark Vessel','sanctuary','unit',7,7,7,'🔻','Drain. On play: deal 3 damage to the enemy commander.','legendary',['drain'],'enemy3','Vessel'),
+  mage_titan:C('mage_titan','Mage Titan','sanctuary','unit',9,9,10,'🏔️','Guard. The mountains remember its footsteps.','legendary',['guard'],null,'Titan'),
+  essence_sapper:C('essence_sapper','Essence Sapper','sanctuary','spell',3,0,0,'⛓️','Deal 2 damage to an enemy unit. Your opponent has 1 less Essence next turn.','rare',[],'sapper'),
+  orange_labyrinth:C('orange_labyrinth','The Orange Labyrinth','sanctuary','spell',4,0,0,'🌀','Return the strongest enemy unit to its owner’s hand.','rare',[],'bounce_strongest'),
+  triple_assault:C('triple_assault','Triple-Aspect Assault','sanctuary','spell',5,0,0,'🔺','Deal 2 damage to all enemies.','epic',[],'damage_all_enemies2'),
+  glass_armor:C('glass_armor','Living-Glass Armor','sanctuary','relic',4,0,0,'🛡️','At the start of your turn, gain 1 Armor, up to 5.','epic',[],'relic_armor'),
+
+  // Bears
+  spineback_cub:C('spineback_cub','Spineback Cub','bears','unit',1,1,3,'🐾','Pack: if you control another Beast, gain +1/+1.','common',['pack'],'pack_bonus','Beast'),
+  mage_fowl:C('mage_fowl','Wild Mage Fowl','bears','unit',2,2,2,'🦅','Flight. Its cry carries through the peaks.','common',['flight'],null,'Beast'),
+  aquatic_mage:C('aquatic_mage','Aquatic Mage Creature','bears','unit',2,2,3,'🐟','On play: heal your commander for 2.','common',[],'heal2','Beast'),
+  bear_warrior:C('bear_warrior','Mage Bear Warrior','bears','unit',3,4,3,'🐻','Pack: if you control another Beast, gain Ward.','common',['pack'],'pack_ward','Beast'),
+  beast_courser:C('beast_courser','Mage Beast Courser','bears','unit',3,3,4,'🐺','Swift. On play: another friendly Beast gains +1 Attack.','rare',['swift'],'buff_beast_attack','Beast'),
+  termat_memory:C('termat_memory','Termat’s Memory','bears','unit',4,4,5,'🌙','Rebirth. Friendship outlives the mortal frame.','epic',['rebirth'],null,'Beast'),
+  bear_elder:C('bear_elder','Deep-Tunnel Elder','bears','unit',4,4,6,'🪨','Guard. On play: give your other Beasts +1 Health.','rare',['guard'],'buff_others_beast_health','Beast'),
+  ashka:C('ashka','Ashka, Spine of the Deep','bears','unit',5,6,5,'🦔','On play: deal 2 damage to the strongest enemy unit.','epic',[],'strike_strongest2','Beast'),
+  sage_bear:C('sage_bear','The Sage Bear','bears','unit',6,5,8,'🐻‍❄️','Guard. On play: give all friendly Beasts +1/+1.','legendary',['guard'],'buff_all_beasts','Beast'),
+  march_bears:C('march_bears','March of the Mage Bears','bears','spell',7,0,0,'🐾','Summon three Mage Bear Warriors.','legendary',[],'summon_three_bears'),
+  tunnel_right:C('tunnel_right','Always to the Right','bears','spell',2,0,0,'🕳️','Draw a Beast. It costs 1 less.','common',[],'draw_beast_discount'),
+  ancient_roar:C('ancient_roar','Ancient Roar','bears','spell',3,0,0,'📣','Give all friendly Beasts +1 Attack and Ward.','rare',[],'roar'),
+  cave_ambush:C('cave_ambush','Cave Ambush','bears','spell',3,0,0,'🌑','Summon two Spineback Cubs.','common',[],'summon_two_cubs'),
+  endless_light:C('endless_light','The Endless Light','bears','spell',5,0,0,'💡','Return the last friendly Beast defeated this game to your board.','epic',[],'revive_beast'),
+  old_blood:C('old_blood','Rite of the Old Blood','bears','relic',3,0,0,'🩸','Whenever you summon a Beast, it gains +0/+1.','rare',[],'relic_old_blood'),
+  ferocious_charge:C('ferocious_charge','Ferocious Charge','bears','spell',2,0,0,'💨','Give a friendly unit +2 Attack and Swift.','common',[],'charge'),
+
+  // Bone Host
+  fissure_skeleton:C('fissure_skeleton','Fissure Skeleton','bone','unit',1,2,1,'🦴','Rebirth. It remembers clawing at the wall.','common',['rebirth'],null,'Undead'),
+  smoke_wraith_b:C('smoke_wraith_b','Black-Mist Wraith','bone','unit',2,3,1,'🌫️','Swift. On defeat: deal 1 damage to both commanders.','common',['swift'],'death_both1','Wraith'),
+  crystal_prisoner:C('crystal_prisoner','Dark Crystal Prisoner','bone','unit',2,1,5,'💎','Guard. Cannot attack the turn after it is damaged.','common',['guard'],'crystal_slow','Undead'),
+  crystal_thrall:C('crystal_thrall','Crystal Thrall','bone','unit',3,3,4,'🗿','Guard. On play: deal 1 damage to your commander.','common',['guard'],'self1','Undead'),
+  blackened_sovereign:C('blackened_sovereign','Blackened Sovereign','bone','unit',5,5,6,'☠️','On defeat: summon two Fissure Skeletons.','epic',[],'death_two_skeletons','Undead'),
+  bone_serpent:C('bone_serpent','Three-Eyed Bone Serpent','bone','unit',5,5,5,'🐍','Drain. On play: the enemy loses 1 temporary Essence.','rare',['drain'],'steal_temp_essence','Undead'),
+  shadow_colossus:C('shadow_colossus','Shadow Colossus','bone','unit',6,7,6,'🌑','When damaged and surviving, gain +1 Attack.','rare',[],'pain_grow','Undead'),
+  jamith_bound:C('jamith_bound','Jamith, Bound Vessel','bone','unit',7,6,7,'🖤','Rebirth, Drain. On play: return a random defeated Undead to your hand.','legendary',['rebirth','drain'],'return_undead','Vessel'),
+  bone_king:C('bone_king','The Bone King','bone','unit',9,8,10,'👑','Guard. On play: transform all units with 2 or less Health into Crystal Prisoners.','legendary',['guard'],'crystalize_weak','Sovereign'),
+  remember_us:C('remember_us','Remember Us','bone','spell',2,0,0,'🧠','Draw 2 cards. Deal 2 damage to your commander.','common',[],'draw2_self2'),
+  crystal_seal:C('crystal_seal','Crystal Seal','bone','spell',3,0,0,'🔒','Transform a damaged enemy unit into a Crystal Prisoner.','rare',[],'crystalize_damaged'),
+  black_mist:C('black_mist','Black Mist','bone','spell',4,0,0,'🌫️','Deal 1 damage to all units. Summon a Black-Mist Wraith.','rare',[],'black_mist'),
+  final_chance:C('final_chance','A Final Chance','bone','spell',2,0,0,'🕯️','Give a friendly unit Rebirth and +1 Health.','common',[],'grant_rebirth'),
+  great_flood:C('great_flood','The Oncoming Flood','bone','spell',8,0,0,'🌊','Destroy all units. Each commander takes 3 damage.','legendary',[],'great_flood'),
+  last_helmet:C('last_helmet','Helmet of the Last Realm','bone','relic',5,0,0,'⛑️','At the start of your turn, draw an extra card and take 1 damage.','legendary',[],'relic_helmet'),
+  dark_invitation:C('dark_invitation','The King’s Invitation','bone','spell',4,0,0,'🫴','Take control of the weakest enemy unit if you have board space.','epic',[],'steal_weakest')
+};
+
+const DECKS = {
+  vigilant:['vigilant_watcher','vigilant_watcher','remainder_scout','remainder_scout','peter_hope','mage_fowl_messenger','mage_fowl_messenger','carnon','carnon','jamith_scholar','cherbur','cherbur','sarhah','evelet','azil','dawn_potation','dawn_potation','days_flight','days_flight','semprel_blessing','hidden_bell','communication_amulet','prismatic_sustenance','prismatic_sustenance'],
+  sanctuary:['zealot','zealot','wraith','wraith','orange_mage','orange_mage','emerald_mage','purple_mage','purple_mage','glass_raptor','glass_raptor','mage_mites','mage_mites','wraith_queen','sarchat','mage_gigas','kaval','mage_titan','essence_sapper','essence_sapper','orange_labyrinth','triple_assault','triple_assault','glass_armor'],
+  bears:['spineback_cub','spineback_cub','mage_fowl','mage_fowl','aquatic_mage','aquatic_mage','bear_warrior','bear_warrior','beast_courser','termat_memory','bear_elder','bear_elder','ashka','sage_bear','march_bears','tunnel_right','tunnel_right','ancient_roar','ancient_roar','cave_ambush','cave_ambush','endless_light','old_blood','ferocious_charge'],
+  bone:['fissure_skeleton','fissure_skeleton','smoke_wraith_b','smoke_wraith_b','crystal_prisoner','crystal_prisoner','crystal_thrall','crystal_thrall','blackened_sovereign','bone_serpent','shadow_colossus','jamith_bound','bone_king','remember_us','remember_us','crystal_seal','crystal_seal','black_mist','black_mist','final_chance','great_flood','last_helmet','dark_invitation','dark_invitation']
+};
+
+const RARITY = {common:'#a6a094',rare:'#5ca9e6',epic:'#b47ceb',legendary:'#f1c552'};
+const $ = id => document.getElementById(id);
+const els = {
+  setup:$('setupScreen'), game:$('gameScreen'), factionGrid:$('factionGrid'), selectedDecks:$('selectedDecks'), start:$('startBtn'), p1name:$('p1name'), p2name:$('p2name'), p2row:$('p2nameRow'), diffRow:$('difficultyRow'), difficulty:$('difficulty'),
+  enemyZone:$('enemyZone'), selfZone:$('selfZone'), enemyBoard:$('enemyBoard'), selfBoard:$('selfBoard'), hand:$('hand'), handOwner:$('handOwner'), handHint:$('handHint'), turnText:$('turnText'), activeNote:$('activeNote'), log:$('log'), endTurn:$('endTurnBtn'), cancel:$('cancelBtn'),
+  rules:$('rulesOverlay'), pass:$('passOverlay'), passTitle:$('passTitle'), passBtn:$('passBtn'), end:$('endOverlay'), endTitle:$('endTitle'), endText:$('endText'), endIcon:$('endIcon'), endStats:$('endStats'), toast:$('toast'), sound:$('soundBtn'), quit:$('quitBtn')
+};
+
+let setup = {mode:'cpu', p1Faction:null, p2Faction:null, selectionTarget:'p1'};
+let state = null;
+let uidCounter = 1;
+let soundOn = true;
+let audioCtx = null;
+let toastTimer = null;
+
+function cloneCard(id){
+  const base=CARDS[id];
+  return {...base,uid:'c'+(uidCounter++),currentHealth:base.health,currentAttack:base.attack,ready:false,ward:base.keywords.includes('ward'),rebirth:base.keywords.includes('rebirth'),stunned:0,discount:0,damagedThisTurn:false};
+}
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+function choose(arr){return arr.length?arr[Math.floor(Math.random()*arr.length)]:null;}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function opponentIndex(i){return i===0?1:0;}
+function active(){return state.players[state.current];}
+function opponent(){return state.players[opponentIndex(state.current)];}
+function cardCost(card){return Math.max(0,card.cost-(card.discount||0));}
+function currentIsHuman(){return state.mode==='local'||state.current===0;}
+function addLog(html,color='#776ba7'){
+  if(!state)return; state.log.unshift({html,color}); state.log=state.log.slice(0,60); renderLog();
+}
+function showToast(msg){clearTimeout(toastTimer);els.toast.textContent=msg;els.toast.classList.add('show');toastTimer=setTimeout(()=>els.toast.classList.remove('show'),1900);}
+function beep(freq=420,dur=.08,type='sine',gain=.035){
+  if(!soundOn)return; try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.value=gain;o.connect(g);g.connect(audioCtx.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+dur);o.stop(audioCtx.currentTime+dur);}catch(e){}
+}
+function sparksAt(el,color='#f3ce72',count=12){if(!el)return;const r=el.getBoundingClientRect();for(let i=0;i<count;i++){const s=document.createElement('i');s.className='spark';s.style.left=(r.left+r.width/2)+'px';s.style.top=(r.top+r.height/2)+'px';s.style.setProperty('--spark',color);s.style.setProperty('--dx',(Math.random()*130-65)+'px');s.style.setProperty('--dy',(Math.random()*110-75)+'px');document.body.appendChild(s);setTimeout(()=>s.remove(),750);}}
+function floatNumber(el,text,color='#ffdd7a'){if(!el)return;const r=el.getBoundingClientRect();const n=document.createElement('div');n.className='floating-number';n.textContent=text;n.style.color=color;n.style.left=(r.left+r.width/2)+'px';n.style.top=(r.top+r.height/2)+'px';document.body.appendChild(n);setTimeout(()=>n.remove(),850);}
+
+function renderFactionGrid(){
+  els.factionGrid.innerHTML='';
+  Object.entries(FACTIONS).forEach(([key,f])=>{
+    const b=document.createElement('button');
+    b.className='faction-card'; b.style.setProperty('--faction',f.color); b.dataset.faction=key;
+    b.innerHTML=`<div class="crest">${f.crest}</div><div class="tag">${f.tag}</div><h4>${f.name}</h4><p>${f.description}</p><div class="chips">${f.chips.map(x=>`<span class="chip">${x}</span>`).join('')}</div><div class="select-hint">Click to assign</div>`;
+    b.addEventListener('click',()=>selectFaction(key));
+    els.factionGrid.appendChild(b);
+  });
+  updateSetupUI();
+}
+function selectFaction(key){
+  if(setup.selectionTarget==='p1'){
+    setup.p1Faction=key;
+    if(setup.mode==='local'&&setup.p2Faction===key)setup.p2Faction=null;
+    setup.selectionTarget='p2';
+  }else{
+    setup.p2Faction=key;
+    if(setup.mode==='local'&&setup.p1Faction===key)setup.p1Faction=null;
+    setup.selectionTarget='p1';
+  }
+  beep(520,.07,'triangle');updateSetupUI();
+}
+function updateSetupUI(){
+  document.querySelectorAll('.faction-card').forEach(el=>{
+    const k=el.dataset.faction;el.classList.remove('selected-p1','selected-p2','selected-both');
+    if(setup.p1Faction===k&&setup.p2Faction===k)el.classList.add('selected-both');
+    else if(setup.p1Faction===k)el.classList.add('selected-p1');
+    else if(setup.p2Faction===k)el.classList.add('selected-p2');
+  });
+  const p1=setup.p1Faction?FACTIONS[setup.p1Faction]:null;
+  const p2=setup.p2Faction?FACTIONS[setup.p2Faction]:null;
+  $('assignP1Btn').textContent=setup.mode==='local'?'Player 1':'You';
+  $('assignP2Btn').textContent=setup.mode==='local'?'Player 2':'Computer';
+  document.querySelectorAll('.assign-tab').forEach(b=>b.classList.toggle('active',b.dataset.target===setup.selectionTarget));
+  els.selectedDecks.innerHTML=`<div class="selected-line" style="--faction:${p1?p1.color:'#34384b'}"><div class="mini-sigil">${p1?p1.crest:'?'}</div><div><b>${setup.mode==='local'?'Player 1':'You'}: ${p1?p1.short:'Choose a faction'}</b><small>${p1?p1.tag:'No deck selected yet'}</small></div></div>`+
+  `<div class="selected-line" style="--faction:${p2?p2.color:'#34384b'}"><div class="mini-sigil">${p2?p2.crest:'?'}</div><div><b>${setup.mode==='local'?'Player 2':'Computer'}: ${p2?p2.short:(setup.mode==='cpu'?'Random faction':'Choose a faction')}</b><small>${p2?p2.tag:(setup.mode==='cpu'?'Chosen when battle begins':'No deck selected yet')}</small></div></div>`;
+  els.start.disabled=!setup.p1Faction||(setup.mode==='local'&&!setup.p2Faction);
+}
+function setMode(mode){
+  setup.mode=mode;setup.p1Faction=null;setup.p2Faction=null;setup.selectionTarget='p1';
+  document.querySelectorAll('.mode-tab').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  els.p2row.classList.toggle('hidden',mode!=='local');els.diffRow.classList.toggle('hidden',mode!=='cpu');updateSetupUI();
+}
+
+function makePlayer(name,faction,isCpu=false){
+  const deck=shuffle(DECKS[faction].map(cloneCard));
+  return {name:name||FACTIONS[faction].commander,faction,isCpu,health:30,armor:0,maxEssence:0,essence:0,deck,hand:[],board:[],relic:null,fatigue:0,turns:0,essencePenalty:0,tempEssence:0,graveyard:[],stats:{cardsPlayed:0,damageDealt:0,unitsLost:0,healing:0}};
+}
+function startGame(){
+  let p2f=setup.p2Faction;
+  if(!p2f){p2f=choose(Object.keys(FACTIONS).filter(k=>k!==setup.p1Faction));}
+  const p1name=els.p1name.value.trim()||'Commander One';
+  const p2name=setup.mode==='local'?(els.p2name.value.trim()||'Commander Two'):`${FACTIONS[p2f].short} Tactician`;
+  state={mode:setup.mode,difficulty:els.difficulty.value,players:[makePlayer(p1name,setup.p1Faction,false),makePlayer(p2name,p2f,setup.mode==='cpu')],current:0,turn:0,selectedAttacker:null,selectedSpell:null,log:[],over:false,busy:false};
+  state.players.forEach(p=>{for(let i=0;i<4;i++)drawCard(p,false);});
+  els.setup.classList.add('hidden');els.game.classList.remove('hidden');els.quit.classList.remove('hidden');
+  addLog(`<b>${p1name}</b> commands the ${FACTIONS[setup.p1Faction].name}.`,FACTIONS[setup.p1Faction].color);
+  addLog(`<b>${p2name}</b> commands the ${FACTIONS[p2f].name}.`,FACTIONS[p2f].color);
+  startTurn(0,true);
+}
+function startTurn(index,initial=false){
+  if(state.over)return;state.current=index;state.turn++;state.selectedAttacker=null;state.selectedSpell=null;
+  const p=active();p.turns++;p.maxEssence=Math.min(10,p.maxEssence+1);p.essence=Math.max(0,p.maxEssence-(p.essencePenalty||0));p.essencePenalty=0;p.tempEssence=0;
+  p.board.forEach(u=>{u.damagedThisTurn=false;if(u.stunned>0){u.stunned--;u.ready=false;}else u.ready=true;});
+  processTurnStart(p);
+  if(!initial||state.turn>1)drawCard(p,true);
+  addLog(`<b>${p.name}</b> begins turn ${p.turns}.`,FACTIONS[p.faction].color);
+  renderAll();
+  if(state.mode==='local'&&!initial){showPassOverlay();return;}
+  if(p.isCpu) setTimeout(cpuTurn,650);
+}
+function processTurnStart(p){
+  for(const u of [...p.board]){
+    if(u.effect==='turn_heal1')healCommander(p,1,null,false);
+  }
+  if(p.relic){
+    if(p.relic.effect==='relic_armor'){p.armor=Math.min(5,p.armor+1);addLog(`${p.relic.name} grants <b>1 Armor</b>.`,'#77b7ee');}
+    if(p.relic.effect==='relic_helmet'){drawCard(p,true);damageCommander(p,1,null,false);addLog(`${p.relic.name} shares knowledge at a price.`,'#8996aa');}
+    if(p.relic.effect==='relic_amulet'&&p.turns%3===0){drawCard(p,true);addLog(`${p.relic.name} carries a distant message.`,'#d8bc69');}
+  }
+}
+function showPassOverlay(){els.passTitle.textContent=`Pass to ${active().name}`;els.pass.classList.remove('hidden');}
+function drawCard(p,announce=true){
+  if(p.deck.length===0){p.fatigue++;damageCommander(p,p.fatigue,null,false);if(announce)addLog(`<b>${p.name}</b> suffers ${p.fatigue} fatigue damage.`,'#d75c68');return null;}
+  const c=p.deck.pop();
+  if(p.hand.length>=9){if(announce)addLog(`${p.name} burns <b>${c.name}</b>; the hand is full.`,'#d9864d');p.graveyard.push(c);return null;}
+  p.hand.push(c);if(announce)addLog(`${p.name} draws a card.`,'#7184ba');return c;
+}
+function drawSpecific(p,predicate){const idx=p.deck.findIndex(predicate);if(idx<0)return drawCard(p,true);const c=p.deck.splice(idx,1)[0];if(p.hand.length<9)p.hand.push(c);else p.graveyard.push(c);return c;}
+
+function renderAll(){if(!state)return;renderPlayerZones();renderBoards();renderHand();renderLog();renderControls();}
+function renderPlayerZones(){
+  const self=active(),enemy=opponent();
+  els.selfZone.innerHTML=playerZoneHTML(self,false);els.enemyZone.innerHTML=playerZoneHTML(enemy,true);
+  const enemyCommander=els.enemyZone.querySelector('.commander');
+  if(state.selectedAttacker&&canAttackHero(state.selectedAttacker,enemy))enemyCommander.classList.add('targetable');
+  enemyCommander.addEventListener('click',()=>attackHero());
+}
+function playerZoneHTML(p,isEnemy){
+  const f=FACTIONS[p.faction];
+  const essence=Array.from({length:p.maxEssence},(_,i)=>`<i class="essence ${i<p.essence?'full':''}"></i>`).join('')||'<span style="color:#777">—</span>';
+  const relic=p.relic?`<div class="relic-slot filled"><div><div class="relic-icon">${p.relic.glyph}</div><div class="relic-name">${p.relic.name}</div><div class="relic-text">${p.relic.text}</div></div></div>`:`<div class="relic-slot">Empty relic slot</div>`;
+  return `<div class="commander" style="--faction:${f.color}" data-player="${isEnemy?'enemy':'self'}"><div class="hero-icon">${f.hero}</div><div class="faction-name">${f.name}</div><div class="name">${escapeHtml(p.name)}</div><div class="health-row"><div class="health-orb">♥ ${p.health}</div>${p.armor?`<div class="armor-orb">◆ ${p.armor}</div>`:''}</div></div><div class="resource-box"><div class="resource-label">Essence</div><div class="essence-row">${essence}</div><div class="deck-stats"><span class="deck-stat">Deck ${p.deck.length}</span><span class="deck-stat">Hand ${p.hand.length}</span></div></div>${relic}`;
+}
+function renderBoards(){renderBoard(els.selfBoard,active(),false);renderBoard(els.enemyBoard,opponent(),true);}
+function renderBoard(container,p,isEnemy){
+  container.innerHTML='';
+  if(!p.board.length){container.innerHTML=`<div class="board-empty">${isEnemy?'The opposing field is empty.':'Your field awaits its champions.'}</div>`;return;}
+  p.board.forEach(u=>{
+    const el=createCardEl(u,true);
+    if(!isEnemy&&u.ready&&!p.isCpu)el.classList.add('can-attack');
+    if(!isEnemy&&state.selectedAttacker?.uid===u.uid)el.classList.add('selected');
+    if(isEnemy&&state.selectedAttacker&&isValidAttackTarget(state.selectedAttacker,u,opponent()))el.classList.add('targetable');
+    el.addEventListener('click',()=>isEnemy?attackUnit(u.uid):selectAttacker(u.uid));
+    container.appendChild(el);
+  });
+}
+function renderHand(){
+  const p=active();els.hand.innerHTML='';els.handOwner.textContent=p.isCpu?'Opponent hand':`${p.name}’s hand`;
+  if(p.isCpu){els.hand.innerHTML=Array.from({length:p.hand.length},()=>`<div class="card" style="--accent:#4b5067;display:grid;place-items:center"><div style="font-family:Georgia,serif;font-size:2rem;color:#d7be74">△</div></div>`).join('');return;}
+  p.hand.forEach(c=>{
+    const el=createCardEl(c,false);const playable=canPlayCard(p,c);if(!playable)el.classList.add('unplayable');
+    el.addEventListener('click',()=>playCard(c.uid));els.hand.appendChild(el);
+  });
+}
+function createCardEl(c,onBoard){
+  const f=FACTIONS[c.faction];const el=document.createElement('button');el.className='card'+(onBoard?' board-card':'');el.style.setProperty('--accent',f.color);el.style.setProperty('--rarity',RARITY[c.rarity]);el.dataset.uid=c.uid;el.setAttribute('aria-label',`${c.name}, ${c.type}, cost ${cardCost(c)}. ${c.text}`);
+  if(onBoard&&!c.ready)el.classList.add('exhausted');if(onBoard&&c.stunned>0)el.classList.add('stunned');
+  const keys=[...c.keywords];if(c.rebirth&&!keys.includes('rebirth'))keys.push('rebirth');
+  el.innerHTML=`<div class="cost">${cardCost(c)}</div><div class="rarity"></div><div class="card-art"><span class="card-glyph">${c.glyph}</span></div><div class="card-body"><div class="card-name">${c.name}</div><div class="card-type">${c.tribe?c.tribe+' · ':''}${c.type}</div><div class="card-text">${c.text}</div></div>${c.type==='unit'?`<div class="stats"><span class="stat atk">${effectiveAttack(c,findOwner(c))}</span><span class="keyword-row">${keys.map(k=>`<span class="keyword">${capitalize(k)}</span>`).join('')}</span><span class="stat hp">${effectiveHealth(c,findOwner(c))}</span></div>`:''}${onBoard&&c.ward?'<div class="ward-mark"></div>':''}${onBoard&&c.rebirth?'<div class="rebirth-mark">♻️</div>':''}`;
+  return el;
+}
+function findOwner(card){if(!state)return null;return state.players.find(p=>p.board.some(x=>x.uid===card.uid)||p.hand.some(x=>x.uid===card.uid))||null;}
+function effectiveAttack(u,owner){let v=u.currentAttack;if(!owner)return v;return v;}
+function effectiveHealth(u,owner){return u.currentHealth;}
+function renderLog(){if(!state)return;els.log.innerHTML=state.log.map(e=>`<div class="log-entry" style="--log:${e.color}">${e.html}</div>`).join('');}
+function renderControls(){
+  const p=active();const human=currentIsHuman();els.endTurn.disabled=!human||state.busy||state.over;els.cancel.disabled=!state.selectedAttacker&&!state.selectedSpell;els.turnText.textContent=`TURN ${state.turn} · ${p.name.toUpperCase()}`;
+  if(p.isCpu)els.activeNote.innerHTML=`The opposing commander is considering the field <span class="cpu-thinking"><span></span><span></span><span></span></span>`;
+  else if(state.selectedAttacker)els.activeNote.textContent=`${state.selectedAttacker.name} is ready. Choose an enemy target.`;
+  else els.activeNote.textContent='Spend Essence to deploy cards. Select a ready unit, then choose its target.';
+  els.handHint.textContent=state.selectedAttacker?'Choose an enemy target':'Play a card or command a ready unit';
+}
+
+function canPlayCard(p,c){
+  if(state.busy||state.over||p!==active()||p.isCpu)return false;
+  if(cardCost(c)>p.essence)return false;
+  if(c.type==='unit'&&p.board.length>=5)return false;
+  if(['blessing','charge','grant_rebirth'].includes(c.effect)&&p.board.length===0)return false;
+  if(c.effect==='crystalize_damaged'&&!opponent().board.some(u=>u.currentHealth<effectiveHealth(u,opponent())))return false;
+  if(c.effect==='steal_weakest'&&(opponent().board.length===0||p.board.length>=5))return false;
+  return true;
+}
+function playCard(uid,forcedTarget=null){
+  const p=active();const idx=p.hand.findIndex(c=>c.uid===uid);if(idx<0||p.isCpu||state.busy)return false;const c=p.hand[idx];
+  if(!canPlayCard(p,c)){showToast('That card cannot be played now.');beep(150,.09,'sawtooth');return false;}
+  return executePlay(p,idx,c,forcedTarget);
+}
+function executePlay(p,idx,c,forcedTarget=null){
+  p.essence-=cardCost(c);p.hand.splice(idx,1);p.stats.cardsPlayed++;state.selectedAttacker=null;
+  if(c.type==='unit'){
+    summonUnit(p,c,true);addLog(`<b>${p.name}</b> summons <b>${c.name}</b>.`,FACTIONS[p.faction].color);resolveEffect(c.effect,p,opponentIndex(state.current),c,forcedTarget);
+  }else if(c.type==='relic'){
+    if(p.relic)p.graveyard.push(p.relic);p.relic=c;addLog(`<b>${p.name}</b> equips <b>${c.name}</b>.`,FACTIONS[p.faction].color);beep(610,.12,'triangle');
+  }else{
+    addLog(`<b>${p.name}</b> casts <b>${c.name}</b>.`,FACTIONS[p.faction].color);resolveEffect(c.effect,p,opponentIndex(state.current),c,forcedTarget);p.graveyard.push(c);beep(540,.09,'triangle');
+  }
+  renderAll();checkGameOver();return true;
+}
+function summonUnit(p,c,fromHand=false){
+  if(p.board.length>=5)return false;c.ready=c.keywords.includes('swift');
+  if(p.relic?.effect==='relic_old_blood'&&c.tribe==='Beast')c.currentHealth+=1;
+  p.board.push(c);
+  if(c.effect==='pack_bonus'&&p.board.some(x=>x.uid!==c.uid&&x.tribe==='Beast')){c.currentAttack++;c.currentHealth++;}
+  if(c.effect==='pack_ward'&&p.board.some(x=>x.uid!==c.uid&&x.tribe==='Beast'))c.ward=true;
+  return true;
+}
+function resolveEffect(effect,p,enemyIdx,source,targetUid=null){
+  if(!effect)return;const e=state.players[enemyIdx];
+  switch(effect){
+    case'draw1':drawCard(p,true);break;
+    case'heal2':healCommander(p,2);break;case'heal4':healCommander(p,4);break;case'heal5':healCommander(p,5);break;
+    case'buff_others_health':p.board.filter(x=>x.uid!==source.uid).forEach(x=>x.currentHealth++);break;
+    case'summon_scout':summonToken(p,'remainder_scout');break;
+    case'azil_rally':p.board.filter(x=>x.uid!==source.uid).forEach(x=>{x.currentAttack++;x.currentHealth++;});healCommander(p,3);break;
+    case'enemy1':damageCommander(e,1,source);break;case'enemy3':damageCommander(e,3,source);break;
+    case'ping_random':{const t=choose(e.board);if(t)damageUnit(e,t,1,source,p);break;}
+    case'stun_strongest':{const t=strongest(e.board);if(t){t.stunned=Math.max(t.stunned,1);t.ready=false;addLog(`<b>${t.name}</b> is stunned.`,'#7ba6e7');}break;}
+    case'buff_construct':{const t=choose(p.board.filter(x=>x.tribe==='Construct'&&x.uid!==source.uid));if(t){t.currentAttack++;t.currentHealth++;}break;}
+    case'stun_damaged':e.board.filter(x=>x.currentHealth<effectiveHealth(x,e)).forEach(x=>{x.stunned=Math.max(x.stunned,1);x.ready=false;});break;
+    case'gigas_quake':state.players.forEach(owner=>[...owner.board].filter(x=>x.uid!==source.uid).forEach(x=>damageUnit(owner,x,2,source,p)));break;
+    case'heal_grow':break;
+    case'hurt_grow':break;
+    case'heal5':healCommander(p,5);break;
+    case'draw2_ward':drawCard(p,true);drawCard(p,true);{const t=choose(p.board);if(t)t.ward=true;}break;
+    case'blessing':healCommander(p,6);{const t=targetUid?p.board.find(x=>x.uid===targetUid):weakest(p.board);if(t)t.currentHealth+=3;}break;
+    case'hidden_bell':[...e.board].forEach(x=>damageUnit(e,x,3,source,p));drawCard(p,true);break;
+    case'gain_essence2':p.essence=Math.min(12,p.essence+2);p.tempEssence+=2;break;
+    case'sapper':{const t=targetUid?e.board.find(x=>x.uid===targetUid):strongest(e.board);if(t)damageUnit(e,t,2,source,p);e.essencePenalty=Math.min(3,(e.essencePenalty||0)+1);break;}
+    case'bounce_strongest':{const t=strongest(e.board);if(t)returnUnitToHand(e,t);break;}
+    case'damage_all_enemies2':[...e.board].forEach(x=>damageUnit(e,x,2,source,p));damageCommander(e,2,source);break;
+    case'pack_bonus':case'pack_ward':break;
+    case'buff_beast_attack':{const t=choose(p.board.filter(x=>x.tribe==='Beast'&&x.uid!==source.uid));if(t)t.currentAttack++;break;}
+    case'buff_others_beast_health':p.board.filter(x=>x.tribe==='Beast'&&x.uid!==source.uid).forEach(x=>x.currentHealth++);break;
+    case'strike_strongest2':{const t=strongest(e.board);if(t)damageUnit(e,t,2,source,p);break;}
+    case'buff_all_beasts':p.board.filter(x=>x.tribe==='Beast'&&x.uid!==source.uid).forEach(x=>{x.currentAttack++;x.currentHealth++;});break;
+    case'summon_three_bears':for(let i=0;i<3;i++)summonToken(p,'bear_warrior');break;
+    case'draw_beast_discount':{const c=drawSpecific(p,x=>x.tribe==='Beast');if(c)c.discount=(c.discount||0)+1;break;}
+    case'roar':p.board.filter(x=>x.tribe==='Beast').forEach(x=>{x.currentAttack++;x.ward=true;});break;
+    case'summon_two_cubs':summonToken(p,'spineback_cub');summonToken(p,'spineback_cub');break;
+    case'revive_beast':{const i=[...p.graveyard].reverse().findIndex(x=>x.tribe==='Beast');if(i>=0&&p.board.length<5){const real=p.graveyard.length-1-i;const c=p.graveyard.splice(real,1)[0];c.currentHealth=Math.max(1,c.health);c.currentAttack=c.attack;c.ready=false;c.ward=c.keywords.includes('ward');c.rebirth=c.keywords.includes('rebirth');p.board.push(c);addLog(`<b>${c.name}</b> returns beneath the endless light.`,'#57bd92');}break;}
+    case'charge':{const t=targetUid?p.board.find(x=>x.uid===targetUid):strongest(p.board);if(t){t.currentAttack+=2;t.ready=true;if(!t.keywords.includes('swift'))t.keywords.push('swift');}break;}
+    case'self1':damageCommander(p,1,source);break;
+    case'steal_temp_essence':e.essence=Math.max(0,e.essence-1);break;
+    case'return_undead':{const choices=p.graveyard.filter(x=>x.tribe==='Undead');const c=choose(choices);if(c&&p.hand.length<9){p.graveyard.splice(p.graveyard.indexOf(c),1);p.hand.push(c);}break;}
+    case'crystalize_weak':state.players.forEach(owner=>[...owner.board].forEach(x=>{if(effectiveHealth(x,owner)<=2)transformUnit(owner,x,'crystal_prisoner');}));break;
+    case'draw2_self2':drawCard(p,true);drawCard(p,true);damageCommander(p,2,source);break;
+    case'crystalize_damaged':{const t=targetUid?e.board.find(x=>x.uid===targetUid):weakest(e.board.filter(x=>x.currentHealth<effectiveHealth(x,e)));if(t)transformUnit(e,t,'crystal_prisoner');break;}
+    case'black_mist':state.players.forEach(owner=>[...owner.board].forEach(x=>damageUnit(owner,x,1,source,p)));summonToken(p,'smoke_wraith_b');break;
+    case'grant_rebirth':{const t=targetUid?p.board.find(x=>x.uid===targetUid):weakest(p.board);if(t){t.rebirth=true;t.currentHealth++;}break;}
+    case'great_flood':state.players.forEach(owner=>[...owner.board].forEach(x=>destroyUnit(owner,x,source,p,true)));damageCommander(p,3,source);damageCommander(e,3,source);break;
+    case'steal_weakest':{const t=weakest(e.board);if(t&&p.board.length<5){e.board.splice(e.board.indexOf(t),1);t.ready=false;p.board.push(t);addLog(`<b>${t.name}</b> answers the King’s invitation.`,'#8b97a8');}break;}
+  }
+}
+function summonToken(p,id){if(p.board.length>=5)return null;const c=cloneCard(id);summonUnit(p,c,false);addLog(`${p.name} summons <b>${c.name}</b>.`,FACTIONS[p.faction].color);return c;}
+function strongest(arr){return [...arr].sort((a,b)=>(effectiveAttack(b,findOwner(b))+effectiveHealth(b,findOwner(b)))-(effectiveAttack(a,findOwner(a))+effectiveHealth(a,findOwner(a))))[0]||null;}
+function weakest(arr){return [...arr].sort((a,b)=>(effectiveAttack(a,findOwner(a))+effectiveHealth(a,findOwner(a)))-(effectiveAttack(b,findOwner(b))+effectiveHealth(b,findOwner(b))))[0]||null;}
+function returnUnitToHand(owner,u){owner.board.splice(owner.board.indexOf(u),1);u.ready=false;u.currentHealth=u.health;u.currentAttack=u.attack;u.ward=u.keywords.includes('ward');u.rebirth=u.keywords.includes('rebirth');if(owner.hand.length<9)owner.hand.push(u);else owner.graveyard.push(u);addLog(`<b>${u.name}</b> is lost in the Orange Labyrinth.`,'#c474e9');}
+function transformUnit(owner,u,newId){const idx=owner.board.indexOf(u);if(idx<0)return;const n=cloneCard(newId);n.ready=false;owner.graveyard.push(u);owner.board[idx]=n;addLog(`<b>${u.name}</b> is sealed in dark crystal.`,'#7b899d');}
+
+function selectAttacker(uid){
+  if(!currentIsHuman()||state.busy)return;const p=active();const u=p.board.find(x=>x.uid===uid);if(!u)return;
+  if(!u.ready||u.stunned>0){showToast(`${u.name} is not ready.`);return;}
+  state.selectedAttacker=state.selectedAttacker?.uid===uid?null:u;beep(360,.06,'triangle');renderAll();
+}
+function isValidAttackTarget(attacker,target,enemyOwner){
+  if(!attacker||!target)return false;const guards=enemyOwner.board.filter(x=>x.keywords.includes('guard'));
+  if(attacker.keywords.includes('flight'))return true;
+  return guards.length===0||target.keywords.includes('guard');
+}
+function canAttackHero(attacker,enemyOwner){if(!attacker)return false;if(attacker.keywords.includes('flight'))return true;return !enemyOwner.board.some(x=>x.keywords.includes('guard'));}
+function attackUnit(uid){
+  const a=state.selectedAttacker;if(!a||state.busy)return;const e=opponent();const t=e.board.find(x=>x.uid===uid);if(!t)return;
+  if(!isValidAttackTarget(a,t,e)){showToast('A Guard unit protects that target.');beep(150,.08,'sawtooth');return;}
+  performCombat(active(),a,e,t);state.selectedAttacker=null;renderAll();checkGameOver();
+}
+function attackHero(){
+  const a=state.selectedAttacker;if(!a||state.busy)return;const e=opponent();if(!canAttackHero(a,e)){showToast('A Guard unit protects the commander.');return;}
+  a.ready=false;const dmg=effectiveAttack(a,active());damageCommander(e,dmg,a,true);if(a.keywords.includes('drain'))healCommander(active(),dmg,a);active().stats.damageDealt+=dmg;addLog(`<b>${a.name}</b> strikes ${e.name} for <b>${dmg}</b>.`,FACTIONS[active().faction].color);state.selectedAttacker=null;beep(180,.12,'sawtooth');renderAll();checkGameOver();
+}
+function performCombat(aOwner,a,dOwner,d){
+  a.ready=false;const ad=effectiveAttack(a,aOwner),dd=effectiveAttack(d,dOwner);damageUnit(dOwner,d,ad,a,aOwner);if(aOwner.board.includes(a))damageUnit(aOwner,a,dd,d,dOwner);if(a.keywords.includes('drain'))healCommander(aOwner,ad,a);if(d.keywords.includes('drain'))healCommander(dOwner,dd,d);aOwner.stats.damageDealt+=ad;dOwner.stats.damageDealt+=dd;addLog(`<b>${a.name}</b> clashes with <b>${d.name}</b>.`,'#c68755');beep(160,.13,'square');
+  if(a.effect==='kill_summon_wraith'&&!dOwner.board.includes(d)&&aOwner.board.includes(a))summonToken(aOwner,'wraith');
+}
+function damageUnit(owner,u,amount,source=null,sourceOwner=null){
+  if(amount<=0||!owner.board.includes(u))return 0;
+  if(u.ward){u.ward=false;addLog(`${u.name}’s <b>Ward</b> absorbs the blow.`,'#7fcbed');return 0;}
+  u.currentHealth-=amount;u.damagedThisTurn=true;
+  if(u.effect==='pain_grow'&&u.currentHealth>0)u.currentAttack++;
+  if(u.effect==='crystal_slow'&&u.currentHealth>0){u.stunned=Math.max(u.stunned,1);u.ready=false;}
+  if(effectiveHealth(u,owner)<=0)destroyUnit(owner,u,source,sourceOwner,false);
+  return amount;
+}
+function destroyUnit(owner,u,source=null,sourceOwner=null,ignoreRebirth=false){
+  if(!owner.board.includes(u))return;
+  if(u.rebirth&&!ignoreRebirth){u.rebirth=false;u.currentHealth=1;u.ready=false;u.stunned=0;addLog(`<b>${u.name}</b> rises again with Rebirth.`,'#d8c85f');return;}
+  owner.board.splice(owner.board.indexOf(u),1);owner.graveyard.push(u);owner.stats.unitsLost++;
+  addLog(`<b>${u.name}</b> is defeated.`,'#a9505f');
+  if(u.effect==='death_hidden_bell'){const c=cloneCard('hidden_bell');if(owner.hand.length<9)owner.hand.push(c);else owner.graveyard.push(c);}
+  if(u.effect==='death_two_mites'){summonToken(owner,'mage_mites');summonToken(owner,'mage_mites');}
+  if(u.effect==='death_two_skeletons'){summonToken(owner,'fissure_skeleton');summonToken(owner,'fissure_skeleton');}
+  if(u.effect==='death_both1'){state.players.forEach(p=>damageCommander(p,1,u,false));}
+}
+function damageCommander(p,amount,source=null,animate=true){
+  if(amount<=0)return;let remaining=amount;if(p.armor>0){const blocked=Math.min(p.armor,remaining);p.armor-=blocked;remaining-=blocked;}
+  if(remaining>0){p.health-=remaining;state.players.forEach(x=>x.board.filter(u=>u.effect==='hurt_grow'&&x===p).forEach(u=>u.currentAttack++));}
+  if(animate)requestAnimationFrame(()=>{const zone=(p===active()?els.selfZone:els.enemyZone).querySelector('.commander');floatNumber(zone,'-'+amount,'#ff7272');sparksAt(zone,'#e85e66',12);});
+  checkGameOver();
+}
+function healCommander(p,amount,source=null,animate=true){
+  const before=p.health;p.health=Math.min(30,p.health+amount);const healed=p.health-before;if(healed<=0)return;p.stats.healing+=healed;p.board.filter(u=>u.effect==='heal_grow').forEach(u=>u.currentAttack++);
+  if(animate)requestAnimationFrame(()=>{const zone=(p===active()?els.selfZone:els.enemyZone).querySelector('.commander');floatNumber(zone,'+'+healed,'#74e3a4');sparksAt(zone,'#74e3a4',9);});
+}
+function checkGameOver(){
+  if(!state||state.over)return;const dead=state.players.findIndex(p=>p.health<=0);if(dead<0)return;state.over=true;state.busy=false;const winner=state.players[opponentIndex(dead)],loser=state.players[dead];renderAll();
+  els.endIcon.textContent=winner.faction==='bone'?'👑':'🏆';els.endTitle.textContent=`${winner.name} Prevails`;
+  els.endText.textContent=`The ${FACTIONS[winner.faction].name} has defeated ${loser.name}. The realm will remember this battle.`;
+  els.endStats.innerHTML=`<div class="end-stat"><b>${winner.stats.damageDealt}</b><br><small>Damage dealt</small></div><div class="end-stat"><b>${winner.stats.cardsPlayed}</b><br><small>Cards played</small></div><div class="end-stat"><b>${winner.stats.unitsLost}</b><br><small>Units lost</small></div><div class="end-stat"><b>${winner.health}</b><br><small>Health remaining</small></div>`;
+  setTimeout(()=>els.end.classList.remove('hidden'),450);beep(720,.22,'triangle',.06);
+}
+
+function endTurn(){
+  if(!currentIsHuman()||state.busy||state.over)return;state.selectedAttacker=null;state.selectedSpell=null;renderAll();startTurn(opponentIndex(state.current));
+}
+function cancelSelection(){state.selectedAttacker=null;state.selectedSpell=null;renderAll();}
+
+async function cpuTurn(){
+  if(state.over||!active().isCpu)return;state.busy=true;renderControls();await wait(cpuDelay(500));
+  const p=active(),e=opponent();
+  let safety=20;
+  while(safety-->0&&!state.over){
+    const plays=p.hand.map((c,i)=>({c,i,score:cpuCardScore(c,p,e)})).filter(x=>cardCost(x.c)<=p.essence&&!(x.c.type==='unit'&&p.board.length>=5)&&cpuEffectPlayable(x.c,p,e)).sort((a,b)=>b.score-a.score);
+    if(!plays.length)break;
+    const x=plays[0];executePlay(p,x.i,x.c,cpuChooseTarget(x.c,p,e));renderAll();await wait(cpuDelay(370));
+  }
+  const attackers=[...p.board].filter(u=>u.ready&&u.stunned===0);
+  attackers.sort((a,b)=>effectiveAttack(b,p)-effectiveAttack(a,p));
+  for(const a of attackers){
+    if(state.over||!p.board.includes(a)||!a.ready)continue;
+    const valid=e.board.filter(t=>isValidAttackTarget(a,t,e));
+    let target=null;
+    if(valid.length){
+      const trades=valid.filter(t=>effectiveAttack(a,p)>=effectiveHealth(t,e));
+      if(trades.length)target=trades.sort((x,y)=>effectiveAttack(y,e)-effectiveAttack(x,e))[0];
+      else if(!canAttackHero(a,e)||state.difficulty==='ruthless')target=weakest(valid);
+    }
+    if(target)performCombat(p,a,e,target);else if(canAttackHero(a,e)){a.ready=false;const d=effectiveAttack(a,p);damageCommander(e,d,a,true);if(a.keywords.includes('drain'))healCommander(p,d,a);p.stats.damageDealt+=d;addLog(`<b>${a.name}</b> strikes ${e.name} for <b>${d}</b>.`,FACTIONS[p.faction].color);}
+    renderAll();await wait(cpuDelay(330));
+  }
+  state.busy=false;renderAll();if(!state.over)startTurn(opponentIndex(state.current));
+}
+function cpuDelay(base){return state.difficulty==='novice'?base*1.15:state.difficulty==='ruthless'?base*.72:base;}
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+function cpuEffectPlayable(c,p,e){
+  if(['blessing','charge','grant_rebirth'].includes(c.effect)&&!p.board.length)return false;
+  if(c.effect==='crystalize_damaged'&&!e.board.some(u=>u.currentHealth<effectiveHealth(u,e)))return false;
+  if(c.effect==='steal_weakest'&&(!e.board.length||p.board.length>=5))return false;
+  return true;
+}
+function cpuCardScore(c,p,e){
+  let s=c.cost*1.2+(c.attack||0)+(c.health||0)*.55+Math.random()*1.6;
+  if(c.rarity==='legendary')s+=1.3;if(c.type==='unit'&&p.board.length<2)s+=3;if(c.type==='spell'&&p.board.length>=4)s+=.6;
+  if(['hidden_bell','damage_all_enemies2','black_mist','gigas_quake','great_flood'].includes(c.effect))s+=e.board.length*1.3;
+  if(['heal5','heal4','blessing'].includes(c.effect)&&p.health<16)s+=5;
+  if(c.effect==='bounce_strongest'&&e.board.length)s+=3;if(c.effect==='crystalize_damaged')s+=4;
+  if(c.type==='relic'&&!p.relic)s+=4;if(c.type==='relic'&&p.relic)s-=3;
+  return s;
+}
+function cpuChooseTarget(c,p,e){
+  if(['sapper','crystalize_damaged'].includes(c.effect)){const pool=c.effect==='crystalize_damaged'?e.board.filter(u=>u.currentHealth<effectiveHealth(u,e)):e.board;return strongest(pool)?.uid||null;}
+  if(['blessing','grant_rebirth'].includes(c.effect))return weakest(p.board)?.uid||null;
+  if(c.effect==='charge')return strongest(p.board)?.uid||null;
+  return null;
+}
+
+function rematch(){els.end.classList.add('hidden');const factions=state.players.map(p=>p.faction),names=state.players.map(p=>p.name);state={mode:setup.mode,difficulty:els.difficulty.value,players:[makePlayer(names[0],factions[0],false),makePlayer(names[1],factions[1],setup.mode==='cpu')],current:0,turn:0,selectedAttacker:null,selectedSpell:null,log:[],over:false,busy:false};state.players.forEach(p=>{for(let i=0;i<4;i++)drawCard(p,false);});addLog(`A new chronicle begins.`,'#d9bd70');startTurn(0,true);}
+function newBattle(){els.end.classList.add('hidden');leaveBattle();}
+function leaveBattle(){if(state&&!state.over&&!confirm('Leave this battle and return to faction selection?'))return;state=null;els.game.classList.add('hidden');els.setup.classList.remove('hidden');els.quit.classList.add('hidden');els.log.innerHTML='';}
+function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function capitalize(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+// Events
+document.querySelectorAll('.mode-tab').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+document.querySelectorAll('.assign-tab').forEach(b=>b.addEventListener('click',()=>{setup.selectionTarget=b.dataset.target;updateSetupUI();}));
+els.start.addEventListener('click',startGame);els.endTurn.addEventListener('click',endTurn);els.cancel.addEventListener('click',cancelSelection);
+$('rulesBtn').addEventListener('click',()=>els.rules.classList.remove('hidden'));$('closeRulesBtn').addEventListener('click',()=>els.rules.classList.add('hidden'));
+els.rules.addEventListener('click',e=>{if(e.target===els.rules)els.rules.classList.add('hidden');});
+els.passBtn.addEventListener('click',()=>{els.pass.classList.add('hidden');renderAll();});
+els.sound.addEventListener('click',()=>{soundOn=!soundOn;els.sound.textContent=`Sound: ${soundOn?'On':'Off'}`;els.sound.setAttribute('aria-pressed',String(soundOn));if(soundOn)beep(520,.08,'triangle');});
+els.quit.addEventListener('click',leaveBattle);$('rematchBtn').addEventListener('click',rematch);$('newBattleBtn').addEventListener('click',newBattle);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!els.rules.classList.contains('hidden'))els.rules.classList.add('hidden');else cancelSelection();}if(e.key==='Enter'&&!els.pass.classList.contains('hidden'))els.passBtn.click();});
+
+renderFactionGrid();
+})();
+</script>
+</body>
+</html>
